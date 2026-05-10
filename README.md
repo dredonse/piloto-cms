@@ -233,6 +233,13 @@ Rol:        admin
 
 ## Estado del proyecto (actualizado: 2026-05-10)
 
+### Repositorio
+`https://github.com/dredonse/piloto-cms`
+
+### Ramas
+- `main` — producción
+- `development` — integración (rama activa, aquí mergean las features)
+
 ### Rama activa
 `development`
 
@@ -323,6 +330,20 @@ Rol:        admin
 - Copiado `backend/`, `design-system/`, `docker/`, `sql/`, `docker-compose.yml` de `Piloto-CMS_completo`
 - Actualizado README con contexto completo de ambos proyectos
 
+### Configuración del repositorio git (sesión 2026-05-10)
+
+**Cambios realizados:**
+
+| Archivo | Cambio |
+|---------|--------|
+| `.gitignore` | Creado. Excluye: `.env`, `Documentacion/`, `docker/data/`, `docker/mysql/`, `vendor/`, `node_modules/`, ficheros de sistema (`.DS_Store`, `Thumbs.db`), ficheros de editor (`.vscode/`, `.idea/`), logs. |
+| `.env.example` | Creado. Documenta las variables de entorno necesarias sin valores reales: `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_HOST`, `APP_ENV`, `GOOGLE_CLIENT_ID`. |
+
+**Git:**
+- Repo inicializado y subido a `https://github.com/dredonse/piloto-cms`
+- Rama `main` — commit inicial con toda la estructura
+- Rama `development` creada y publicada en remoto
+
 ---
 
 ## Próximos pasos pendientes
@@ -377,6 +398,10 @@ Rol:        admin
 ### D9 — Repo unificado desde dos proyectos separados (sesión 2026-05-10)
 **Decisión:** Se crea un repo nuevo `piloto-cms` combinando el frontend de `Piloto-CMS_frontend` y el backend de `Piloto-CMS_completo`, en lugar de modificar cualquiera de los dos existentes.
 **Razonamiento:** El frontend avanzado tiene mejor arquitectura pero sin backend. El proyecto completo tiene backend funcional pero frontend básico. Unirlos en un repo limpio desde el principio evita deuda técnica y conflictos de historial git.
+
+### D10 — Documentacion/ ignorada en git pero conservada en local (sesión 2026-05-10)
+**Decisión:** La carpeta `Documentacion/` se añade al `.gitignore` y no se sube al repositorio remoto.
+**Razonamiento:** Contiene capturas de pantalla, PDFs y documentos de trabajo de sesiones anteriores que no aportan valor a quien clona el repo y engordan el historial git innecesariamente. Se conserva en local como material de estudio y referencia personal.
 
 ---
 
