@@ -1,0 +1,110 @@
+/* ============================================================
+   LAYOUT.CSS — Estructura global: body, nav y sistema de páginas
+   ============================================================ */
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── NAV ── */
+nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.logo-mark {
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-mark svg { color: white; }
+
+.nav-pill {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.nav-ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.nav-ghost:hover { color: var(--text); background: var(--bg); }
+
+.nav-solid {
+  background: var(--accent);
+  color: white;
+}
+.nav-solid:hover { background: var(--accent-dk); }
+
+/* Badge de usuarios en nav */
+.user-count-badge {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.user-count-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+/* ── SISTEMA DE PÁGINAS ── */
+.page          { display: none; flex: 1; }
+.page.active   { display: flex; }
+
+/* Layout de páginas de formulario */
+.form-page {
+  align-items: center;
+  justify-content: center;
+  padding: 60px 1rem;
+  flex-direction: column;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  nav { padding: 0 1rem; }
+}

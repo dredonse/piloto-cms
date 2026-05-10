@@ -1,0 +1,170 @@
+/* ============================================================
+   PAGES.CSS — Estilos específicos por página
+   Home, Login/Register (form), Recuperar contraseña
+   ============================================================ */
+
+/* ── HOME ── */
+#page-home {
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 2rem 60px;
+}
+
+.home-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.home-eyebrow::before,
+.home-eyebrow::after {
+  content: '';
+  display: block;
+  height: 1px;
+  width: 32px;
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+.home-title {
+  font-size: clamp(36px, 5vw, 58px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--text);
+  max-width: 640px;
+  margin-bottom: 16px;
+}
+.home-title strong { font-weight: 600; color: var(--accent); }
+
+.home-subtitle {
+  font-size: 16px;
+  color: var(--muted);
+  text-align: center;
+  max-width: 440px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  font-weight: 300;
+}
+
+/* Stat inline — social proof en el hero */
+.stat-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.stat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+  animation: live-pulse 2s ease infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.stat-inline-num {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+.home-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 60px;
+}
+
+/* Grid de features */
+.features-grid {
+  width: 100%;
+  max-width: 680px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: border-top-color 0.2s;
+}
+.feature-card:hover { border-top-color: var(--accent); }
+
+.feature-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--accent-lt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.feature-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.feature-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── RECUPERAR CONTRASEÑA ── */
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 32px;
+  transition: color 0.15s;
+  width: fit-content;
+}
+.back-link:hover { color: var(--text); }
+
+/* Indicador de pasos */
+.steps {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+.step-dot {
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.step-dot.active { background: var(--accent); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .features-grid { grid-template-columns: 1fr; }
+  .home-actions  { flex-direction: column; }
+}

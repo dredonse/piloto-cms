@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piloto CMS — Frontend Privado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sidebar-bg:    #141311;
+    --sidebar-w:     220px;
+    --bg:            #F4F2EE;
+    --surface:       #FFFFFF;
+    --border:        #E0DDD6;
+    --text:          #1A1916;
+    --muted:         #7A7870;
+    --accent:        #C9540A;
+    --accent-lt:     #FDF0E8;
+    --accent-dk:     #9B3D06;
+    --success:       #1A6B3C;
+    --success-lt:    #E8F5EE;
+    --error:         #B91C1C;
+    --error-lt:      #FEF2F2;
+    --warning:       #92400E;
+    --warning-lt:    #FFFBEB;
+    --input-bg:      #FAFAF8;
+    --shadow:        0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 50;
+    padding: 20px 0;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 18px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 12px;
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-brand {
+    font-size: 14px;
+    font-weight: 600;
+    color: #F5F3EF;
+    letter-spacing: -0.02em;
+  }
+  .sidebar-version {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .sidebar-section {
+    padding: 0 10px;
+    margin-bottom: 4px;
+  }
+  .sidebar-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    padding: 8px 10px 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 1px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover {
+    color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.07);
+  }
+  .nav-item.active {
+    color: #F5F3EF;
+    background: rgba(201,84,10,0.25);
+    font-weight: 500;
+  }
+  .nav-item.active .nav-icon { color: var(--accent); }
+  .nav-icon { width: 15px; flex-shrink: 0; opacity: 0.7; }
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  /* SIDEBAR FOOTER */
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .user-chip:hover { background: rgba(255,255,255,0.06); }
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .avatar-admin { background: rgba(201,84,10,0.3); color: #F5A07A; }
+  .avatar-user { background: rgba(26,107,60,0.3); color: #6ECA9A; }
+  .user-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.8); }
+  .user-role {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    font-weight: 400;
+  }
+  .logout-btn {
+    margin-left: auto;
+    color: rgba(255,255,255,0.2);
+    transition: color 0.15s;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .logout-btn:hover { color: rgba(255,255,255,0.6); }
+
+  /* ROLE SWITCHER (dev tool) */
+  .role-switcher {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px;
+    margin: 8px 10px 0;
+  }
+  .role-switcher-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .role-btns { display: flex; gap: 6px; }
+  .role-btn {
+    flex: 1;
+    padding: 5px 0;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .role-btn.active-admin { background: rgba(201,84,10,0.3); border-color: rgba(201,84,10,0.5); color: #F5A07A; }
+  .role-btn.active-user { background: rgba(26,107,60,0.3); border-color: rgba(26,107,60,0.5); color: #6ECA9A; }
+
+  /* ─── MAIN CONTENT ─── */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    flex: 1;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+  .badge-admin { background: var(--accent-lt); color: var(--accent); }
+  .badge-user { background: var(--success-lt); color: var(--success); }
+  .badge-active { background: #EEF2FF; color: #4338CA; }
+
+  /* PAGES */
+  .page { display: none; padding: 28px; flex: 1; }
+  .page.active { display: block; }
+
+  /* ─── DASHBOARD ─── */
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-size: 22px; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .page-subtitle { font-size: 13px; color: var(--muted); }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .kpi-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.03em; margin-bottom: 8px; }
+  .kpi-num {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .kpi-delta {
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .delta-up { color: var(--success); }
+  .delta-down { color: var(--error); }
+
+  /* CONTENT ROW */
+  .content-row {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .card-action {
+    font-size: 12px;
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 500;
+    border: none;
+    background: none;
+    font-family: inherit;
+    padding: 0;
+  }
+
+  /* TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .data-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #FAFAF8; }
+
+  /* USER ROW */
+  .user-row-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar-sm {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+    color: white;
+  }
+
+  /* STATUS DOT */
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-green { background: #22C55E; }
+  .dot-gray { background: #D1D5DB; }
+
+  /* ACTION BTNS */
+  .icon-btn {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--muted);
+  }
+  .icon-btn:hover { border-color: var(--text); color: var(--text); }
+  .icon-btn.danger:hover { border-color: var(--error); color: var(--error); background: var(--error-lt); }
+
+  /* ACTIVITY LIST */
+  .activity-list { padding: 12px 16px; }
+  .activity-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .activity-text { font-size: 12px; color: var(--text); line-height: 1.4; }
+  .activity-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* MINI CHART */
+  .mini-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 48px;
+    padding: 0 20px 16px;
+  }
+  .bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    transition: opacity 0.2s;
+    cursor: pointer;
+  }
+  .bar:hover { opacity: 0.75; }
+
+  /* ─── USER MANAGEMENT ─── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    gap: 8px;
+    flex: 1;
+    max-width: 320px;
+  }
+  .search-box input {
+    border: none;
+    background: none;
+    outline: none;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    width: 100%;
+  }
+  .search-box input::placeholder { color: var(--muted); }
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; border: 1px solid transparent; }
+  .btn-primary-sm { background: var(--accent); color: white; }
+  .btn-primary-sm:hover { background: var(--accent-dk); }
+  .btn-ghost-sm { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .btn-ghost-sm:hover { background: var(--bg); }
+
+  /* PAGINATION */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .pagination-info { font-size: 12px; color: var(--muted); }
+  .pagination-btns { display: flex; gap: 4px; }
+  .page-btn {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .page-btn:hover:not(.active) { background: var(--bg); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+  .modal-close {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .modal-close:hover { background: var(--bg); color: var(--text); }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* FORM FIELDS (modal) */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field select {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); background: white; }
+  .field select { cursor: pointer; }
+
+  /* ─── PROFILE PAGE ─── */
+  .profile-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 16px;
+  }
+  .profile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+  .profile-avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #C9540A, #E8782A);
+  }
+  .profile-name { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .profile-email { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+  .profile-meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .meta-row { display: flex; justify-content: space-between; }
+  .meta-val { font-weight: 500; color: var(--text); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    background: none;
+    font-family: inherit;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* DELETE CONFIRM */
+  .confirm-box {
+    background: var(--error-lt);
+    border: 1px solid #FCA5A5;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .confirm-box p { font-size: 13px; color: var(--error); line-height: 1.5; }
+
+  /* TOASTER */
+  .toaster {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--text);
+    color: var(--surface);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    max-width: 320px;
+    animation: slideUp 0.3s ease;
+    pointer-events: all;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .avatar-color-0 { background: #C9540A; }
+  .avatar-color-1 { background: #1A6B3C; }
+  .avatar-color-2 { background: #1D4ED8; }
+  .avatar-color-3 { background: #7C3AED; }
+  .avatar-color-4 { background: #B45309; }
+  .avatar-color-5 { background: #0F766E; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════
+     SIDEBAR
+═══════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="1" width="5" height="5" rx="1.5" fill="white"/>
+        <rect x="8" y="1" width="5" height="5" rx="1.5" fill="white" opacity=".7"/>
+        <rect x="1" y="8" width="5" height="5" rx="1.5" fill="white" opacity=".7"/>
+        <rect x="8" y="8" width="5" height="5" rx="1.5" fill="white" opacity=".4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sidebar-brand">Piloto CMS</div>
+      <div class="sidebar-version">v1.0 · PILOTO</div>
+    </div>
+  </div>
+
+  <!-- ADMIN NAV -->
+  <div id="nav-admin">
+    <div class="sidebar-section">
+      <div class="sidebar-label">General</div>
+      <button class="nav-item active" id="ni-dashboard" onclick="goTo('dashboard')">
+        <svg class="nav-icon" viewBox="0 0 15 15" fill="currentColor"><path d="M1 1h6v6H1zM8 1h6v6H8zM1 8h6v6H1zM8 8h6v6H8z" opacity=".8"/></svg>
+        Dashboard
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Administración</div>
+      <button class="nav-item" id="ni-users" onclick="goTo('users')">
+        <svg class="nav-icon" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.3">
+          <circle cx="5.5" cy="4" r="2.5"/><path d="M1 13c0-2.485 2.015-4.5 4.5-4.5S10 10.515 10 13"/>
+          <circle cx="11" cy="4" r="2"/><path d="M11 9.5c1.657 0 3 1.343 3 3"/>
+        </svg>
+        Usuarios
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Mi cuenta</div>
+      <button class="nav-item" id="ni-profile-admin" onclick="goTo('profile')">
+        <svg class="nav-icon" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.3">
+          <circle cx="7.5" cy="4.5" r="3"/><path d="M1.5 13.5c0-3.314 2.686-6 6-6s6 2.686 6 6"/>
+        </svg>
+        Mi perfil
+      </button>
+    </div>
+  </div>
+
+  <!-- USER NAV -->
+  <div id="nav-user" style="display:none;">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Mi cuenta</div>
+      <button class="nav-item active" id="ni-profile-user" onclick="goTo('profile-user')">
+        <svg class="nav-icon" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.3">
+          <circle cx="7.5" cy="4.5" r="3"/><path d="M1.5 13.5c0-3.314 2.686-6 6-6s6 2.686 6 6"/>
+        </svg>
+        Mi perfil
+      </button>
+      <button class="nav-item" id="ni-pwd" onclick="goTo('change-pwd')">
+        <svg class="nav-icon" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.3">
+          <rect x="2" y="6" width="11" height="8" rx="1.5"/><path d="M5 6V4a2.5 2.5 0 015 0v2"/><circle cx="7.5" cy="10" r="1" fill="currentColor"/>
+        </svg>
+        Contraseña
+      </button>
+    </div>
+  </div>
+
+  <!-- ROLE SWITCHER (dev prototype tool) -->
+  <div class="role-switcher">
+    <div class="role-switcher-label">Vista prototipo</div>
+    <div class="role-btns">
+      <button class="role-btn active-admin" onclick="setRole('admin')" id="rbtn-admin">Admin</button>
+      <button class="role-btn" onclick="setRole('user')" id="rbtn-user">Usuario</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR FOOTER -->
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar avatar-admin" id="sidebar-avatar">CA</div>
+      <div>
+        <div class="user-name" id="sidebar-name">Carlos Admin</div>
+        <div class="user-role" id="sidebar-role">Administrador</div>
+      </div>
+      <div class="logout-btn" onclick="toast('Sesión cerrada')">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M4.5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h2.5M8 3.5L11 6.5m0 0L8 9.5M11 6.5H4.5"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════
+     MAIN CONTENT
+═══════════════════════════ -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-actions">
+      <span class="badge badge-admin" id="role-badge">Admin</span>
+      <span class="badge badge-active">247 usuarios</span>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────
+       PAGE: DASHBOARD (ADMIN)
+  ────────────────────────────── -->
+  <div class="page active" id="page-dashboard">
+
+    <div class="page-header">
+      <div class="page-title">Buenos días, Carlos 👋</div>
+      <div class="page-subtitle">Aquí tienes el resumen de hoy — domingo, 19 de abril de 2026</div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">USUARIOS TOTALES</div>
+        <div class="kpi-num">247</div>
+        <div class="kpi-delta delta-up">↑ 12 este mes</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ACTIVOS HOY</div>
+        <div class="kpi-num">34</div>
+        <div class="kpi-delta delta-up">↑ 8% vs ayer</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">REGISTROS HOY</div>
+        <div class="kpi-num">3</div>
+        <div class="kpi-delta delta-down">↓ 2 vs ayer</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">RECUPER. CONTRASEÑA</div>
+        <div class="kpi-num">7</div>
+        <div class="kpi-delta" style="color:var(--muted);">Esta semana</div>
+      </div>
+    </div>
+
+    <!-- CHART + ACTIVITY -->
+    <div class="content-row">
+      <!-- Recent users table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Usuarios recientes</div>
+          <button class="card-action" onclick="goTo('users')">Ver todos →</button>
+        </div>
+        <table class="data-table" id="dash-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Alta</th>
+            </tr>
+          </thead>
+          <tbody id="dash-tbody"></tbody>
+        </table>
+        <!-- Mini chart -->
+        <div style="padding:16px 20px 0;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.04em;">REGISTROS ÚLTIMOS 7 DÍAS</div>
+        <div class="mini-chart" id="mini-chart"></div>
+      </div>
+
+      <!-- Activity feed -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Actividad reciente</div>
+        </div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-icon" style="background:var(--success-lt);">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#1A6B3C" stroke-width="1.4"><circle cx="6.5" cy="4" r="2.5"/><path d="M1 11c0-2.485 2.015-4.5 5.5-4.5S12 8.515 12 11"/></svg>
+            </div>
+            <div>
+              <div class="activity-text">Nuevo registro: <strong>Marta López</strong></div>
+              <div class="activity-time">hace 8 minutos</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background:#EEF2FF;">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#4338CA" stroke-width="1.4"><rect x="2" y="4" width="9" height="7" rx="1"/><path d="M4 4V3a2.5 2.5 0 015 0v1"/></svg>
+            </div>
+            <div>
+              <div class="activity-text">Recuperación de contraseña: <strong>javier@...</strong></div>
+              <div class="activity-time">hace 23 minutos</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background:var(--warning-lt);">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#92400E" stroke-width="1.4"><path d="M6.5 1L12 11H1L6.5 1z"/><path d="M6.5 5v3M6.5 9.5h.01" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <div class="activity-text">Intento de login fallido (3x)</div>
+              <div class="activity-time">hace 1 hora</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background:var(--accent-lt);">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#C9540A" stroke-width="1.4"><path d="M9 1L12 4M2 11l1-3.5L10.5 4 9 1 1.5 10l-.5 1.5z"/></svg>
+            </div>
+            <div>
+              <div class="activity-text">Usuario editado: <strong>Roberto P.</strong></div>
+              <div class="activity-time">hace 2 horas</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background:var(--error-lt);">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#B91C1C" stroke-width="1.4"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M4 4l5 5M9 4l-5 5"/></svg>
+            </div>
+            <div>
+              <div class="activity-text">Usuario eliminado</div>
+              <div class="activity-time">hace 3 horas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ──────────────────────────
+       PAGE: USER MANAGEMENT
+  ────────────────────────────── -->
+  <div class="page" id="page-users">
+    <div class="page-header">
+      <div class="page-title">Gestión de usuarios</div>
+      <div class="page-subtitle">Administra los usuarios registrados en la plataforma</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" style="flex-shrink:0;color:var(--muted)">
+          <circle cx="6" cy="6" r="4.5"/><path d="M10 10l2.5 2.5"/>
+        </svg>
+        <input type="text" placeholder="Buscar por nombre o email..." id="search-input" oninput="filterUsers()">
+      </div>
+      <select class="btn btn-ghost-sm" id="role-filter" onchange="filterUsers()" style="padding:8px 12px;">
+        <option value="">Todos los roles</option>
+        <option value="admin">Admin</option>
+        <option value="user">Usuario</option>
+      </select>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <button class="btn btn-primary-sm" onclick="openModal('create')">+ Nuevo usuario</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Auth</th>
+            <th>Alta</th>
+            <th style="text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+      <div class="pagination">
+        <div class="pagination-info" id="pag-info">Mostrando 1–8 de 12 usuarios</div>
+        <div class="pagination-btns">
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ──────────────────────────
+       PAGE: PROFILE (ADMIN)
+  ────────────────────────────── -->
+  <div class="page" id="page-profile">
+    <div class="page-header">
+      <div class="page-title">Mi perfil</div>
+      <div class="page-subtitle">Gestiona tu información personal</div>
+    </div>
+    <div class="profile-layout">
+      <div class="profile-card">
+        <div class="profile-avatar">CA</div>
+        <div class="profile-name">Carlos Administrador</div>
+        <div class="profile-email">carlos@pilotocms.es</div>
+        <div class="badge badge-admin" style="display:inline-block;margin-bottom:16px;">Administrador</div>
+        <div class="profile-meta">
+          <div class="meta-row">
+            <span>ID</span><span class="meta-val">#001</span>
+          </div>
+          <div class="meta-row">
+            <span>Rol</span><span class="meta-val">admin</span>
+          </div>
+          <div class="meta-row">
+            <span>Auth</span><span class="meta-val">Email</span>
+          </div>
+          <div class="meta-row">
+            <span>Alta</span><span class="meta-val">01/01/2026</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Información personal</div>
+            <button class="card-action" onclick="toast('Datos guardados ✓', 'success')">Guardar cambios</button>
+          </div>
+          <div style="padding:20px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="field">
+                <label>Nombre</label>
+                <input type="text" value="Carlos">
+              </div>
+              <div class="field">
+                <label>Apellidos</label>
+                <input type="text" value="Administrador">
+              </div>
+            </div>
+            <div class="field">
+              <label>Correo electrónico</label>
+              <input type="email" value="carlos@pilotocms.es">
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-header">
+            <div class="card-title">Seguridad</div>
+          </div>
+          <div style="padding:20px;">
+            <div class="field">
+              <label>Contraseña actual</label>
+              <input type="password" placeholder="••••••••">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="field">
+                <label>Nueva contraseña</label>
+                <input type="password" placeholder="••••••••">
+              </div>
+              <div class="field">
+                <label>Confirmar nueva</label>
+                <input type="password" placeholder="••••••••">
+              </div>
+            </div>
+            <button class="btn btn-primary-sm" onclick="toast('Contraseña actualizada ✓', 'success')">Actualizar contraseña</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ──────────────────────────
+       PAGE: PROFILE (USER)
+  ────────────────────────────── -->
+  <div class="page" id="page-profile-user">
+    <div class="page-header">
+      <div class="page-title">Mi perfil</div>
+      <div class="page-subtitle">Tu información personal y configuración de cuenta</div>
+    </div>
+    <div class="profile-layout">
+      <div class="profile-card">
+        <div class="profile-avatar" style="background:linear-gradient(135deg,#1A6B3C,#2ECC71);">ML</div>
+        <div class="profile-name">Marta López</div>
+        <div class="profile-email">marta@ejemplo.com</div>
+        <div class="badge badge-user" style="display:inline-block;margin-bottom:16px;">Usuario</div>
+        <div class="profile-meta">
+          <div class="meta-row"><span>ID</span><span class="meta-val">#248</span></div>
+          <div class="meta-row"><span>Rol</span><span class="meta-val">user</span></div>
+          <div class="meta-row"><span>Auth</span><span class="meta-val">Email</span></div>
+          <div class="meta-row"><span>Alta</span><span class="meta-val">19/04/2026</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Mis datos</div>
+            <button class="card-action" onclick="toast('Perfil actualizado ✓', 'success')">Guardar</button>
+          </div>
+          <div style="padding:20px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="field"><label>Nombre</label><input type="text" value="Marta"></div>
+              <div class="field"><label>Apellidos</label><input type="text" value="López"></div>
+            </div>
+            <div class="field"><label>Correo electrónico</label><input type="email" value="marta@ejemplo.com" disabled style="opacity:0.6;cursor:not-allowed;"></div>
+            <p style="font-size:11px;color:var(--muted);margin-top:-6px;">El email no se puede modificar. Contacta con el administrador.</p>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-header">
+            <div class="card-title">Actividad de cuenta</div>
+          </div>
+          <div style="padding:16px 20px;">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+              <div style="text-align:center;padding:14px;background:var(--bg);border-radius:10px;">
+                <div style="font-size:22px;font-weight:600;letter-spacing:-0.03em;">1</div>
+                <div style="font-size:11px;color:var(--muted);">Días activo</div>
+              </div>
+              <div style="text-align:center;padding:14px;background:var(--bg);border-radius:10px;">
+                <div style="font-size:22px;font-weight:600;letter-spacing:-0.03em;">3</div>
+                <div style="font-size:11px;color:var(--muted);">Sesiones</div>
+              </div>
+              <div style="text-align:center;padding:14px;background:var(--bg);border-radius:10px;">
+                <div style="font-size:22px;font-weight:600;letter-spacing:-0.03em;">0</div>
+                <div style="font-size:11px;color:var(--muted);">Recuperaciones</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ──────────────────────────
+       PAGE: CHANGE PASSWORD (USER)
+  ────────────────────────────── -->
+  <div class="page" id="page-change-pwd">
+    <div class="page-header">
+      <div class="page-title">Cambiar contraseña</div>
+      <div class="page-subtitle">Actualiza tu contraseña de acceso</div>
+    </div>
+    <div style="max-width:480px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Nueva contraseña</div>
+        </div>
+        <div style="padding:20px;">
+          <div class="field">
+            <label>Contraseña actual</label>
+            <input type="password" id="cp-current" placeholder="Tu contraseña actual">
+          </div>
+          <div class="field">
+            <label>Nueva contraseña</label>
+            <input type="password" id="cp-new" placeholder="Mínimo 8 caracteres">
+          </div>
+          <div class="field">
+            <label>Confirmar nueva contraseña</label>
+            <input type="password" id="cp-confirm" placeholder="Repite la contraseña">
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:12px 14px;margin:12px 0;font-size:12px;color:var(--muted);line-height:1.6;">
+            La contraseña debe tener al menos 8 caracteres, incluir una mayúscula y un número.
+          </div>
+          <button class="btn btn-primary-sm" onclick="simulateChangePwd()" style="width:100%;padding:10px;">Actualizar contraseña</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+
+<!-- ═══════════════════════════
+     MODAL: CREATE / EDIT USER
+═══════════════════════════ -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Nuevo usuario</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="field"><label>Nombre</label><input type="text" id="m-name" placeholder="Ana"></div>
+        <div class="field"><label>Apellidos</label><input type="text" id="m-surname" placeholder="García"></div>
+      </div>
+      <div class="field"><label>Correo electrónico</label><input type="email" id="m-email" placeholder="ana@ejemplo.com"></div>
+      <div class="field">
+        <label>Contraseña temporal</label>
+        <input type="text" id="m-pwd" placeholder="Se enviará por email" value="">
+      </div>
+      <div class="field">
+        <label>Rol</label>
+        <select id="m-role">
+          <option value="user">Usuario estándar</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary-sm" onclick="saveUser()">Guardar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DELETE CONFIRM -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <div class="modal-title">Eliminar usuario</div>
+      <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-box">
+        <p>Esta acción es <strong>irreversible</strong>. El usuario <strong id="delete-name"></strong> y todos sus datos serán eliminados permanentemente.</p>
+      </div>
+      <p style="font-size:13px;color:var(--muted);">¿Estás seguro de que quieres continuar?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost-sm" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn" style="background:var(--error);color:white;border-color:var(--error);" onclick="confirmDelete()">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTER -->
+<div class="toaster" id="toaster"></div>
+
+
+<script>
+  // ── DATA ──
+  let users = [
+    { id:1, name:'Carlos Administrador', email:'carlos@pilotocms.es', role:'admin', auth:'email', date:'01/01/2026', active:true },
+    { id:2, name:'Marta López',          email:'marta@ejemplo.com',   role:'user',  auth:'email', date:'19/04/2026', active:true },
+    { id:3, name:'Roberto Pérez',        email:'roberto@mail.es',     role:'user',  auth:'google',date:'15/03/2026', active:true },
+    { id:4, name:'Ana García',           email:'ana@empresa.com',     role:'user',  auth:'email', date:'10/03/2026', active:false },
+    { id:5, name:'Luis Fernández',       email:'luis@correo.net',     role:'admin', auth:'email', date:'05/02/2026', active:true },
+    { id:6, name:'Elena Martínez',       email:'elena@web.es',        role:'user',  auth:'google',date:'28/01/2026', active:true },
+    { id:7, name:'Javier Torres',        email:'javier@demo.es',      role:'user',  auth:'email', date:'20/01/2026', active:false },
+    { id:8, name:'Sofía Ramírez',        email:'sofia@test.com',      role:'user',  auth:'email', date:'12/01/2026', active:true },
+  ];
+
+  let currentRole = 'admin';
+  let deleteTarget = null;
+  const avatarColors = ['avatar-color-0','avatar-color-1','avatar-color-2','avatar-color-3','avatar-color-4','avatar-color-5'];
+
+  function initials(name) {
+    return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  }
+
+  // ── NAVIGATION ──
+  function goTo(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+
+    const titles = {
+      'dashboard': 'Dashboard',
+      'users': 'Gestión de usuarios',
+      'profile': 'Mi perfil',
+      'profile-user': 'Mi perfil',
+      'change-pwd': 'Cambiar contraseña'
+    };
+    document.getElementById('topbar-title').textContent = titles[page] || page;
+
+    const navMap = {
+      'dashboard': 'ni-dashboard',
+      'users': 'ni-users',
+      'profile': 'ni-profile-admin',
+      'profile-user': 'ni-profile-user',
+      'change-pwd': 'ni-pwd'
+    };
+    const navEl = document.getElementById(navMap[page]);
+    if (navEl) navEl.classList.add('active');
+  }
+
+  // ── ROLE SWITCHER ──
+  function setRole(role) {
+    currentRole = role;
+    const isAdmin = role === 'admin';
+
+    document.getElementById('nav-admin').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('nav-user').style.display = isAdmin ? 'none' : 'block';
+
+    document.getElementById('rbtn-admin').className = 'role-btn' + (isAdmin ? ' active-admin' : '');
+    document.getElementById('rbtn-user').className = 'role-btn' + (!isAdmin ? ' active-user' : '');
+
+    const badge = document.getElementById('role-badge');
+    badge.textContent = isAdmin ? 'Admin' : 'Usuario';
+    badge.className = 'badge ' + (isAdmin ? 'badge-admin' : 'badge-user');
+
+    const avatar = document.getElementById('sidebar-avatar');
+    avatar.className = 'avatar ' + (isAdmin ? 'avatar-admin' : 'avatar-user');
+    avatar.textContent = isAdmin ? 'CA' : 'ML';
+    document.getElementById('sidebar-name').textContent = isAdmin ? 'Carlos Admin' : 'Marta López';
+    document.getElementById('sidebar-role').textContent = isAdmin ? 'Administrador' : 'Usuario';
+
+    if (isAdmin) {
+      goTo('dashboard');
+    } else {
+      goTo('profile-user');
+    }
+  }
+
+  // ── RENDER USERS TABLE ──
+  function renderUsersTable(data) {
+    const tbody = document.getElementById('users-tbody');
+    tbody.innerHTML = data.map((u, i) => `
+      <tr>
+        <td>
+          <div class="user-row-info">
+            <div class="avatar-sm ${avatarColors[i % 6]}">${initials(u.name)}</div>
+            <span style="font-weight:500;">${u.name}</span>
+          </div>
+        </td>
+        <td style="color:var(--muted);font-size:12px;">${u.email}</td>
+        <td>
+          <span class="badge ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}" style="font-size:10px;">
+            ${u.role === 'admin' ? 'Admin' : 'Usuario'}
+          </span>
+        </td>
+        <td>
+          <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:4px;font-weight:500;">
+            ${u.auth === 'google' ? '🔵 Google' : '📧 Email'}
+          </span>
+        </td>
+        <td style="font-size:12px;color:var(--muted);">${u.date}</td>
+        <td style="text-align:right;">
+          <div style="display:flex;gap:4px;justify-content:flex-end;">
+            <button class="icon-btn" onclick="openModal('edit',${u.id})" title="Editar">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1L11 4M1 11l.8-3L9 1l3 3-7.2 6.2L1 11z"/></svg>
+            </button>
+            <button class="icon-btn danger" onclick="openDeleteModal(${u.id},'${u.name}')" title="Eliminar">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 3h8M4 3V2h4v1M5 5v4M7 5v4M3 3l.5 7h5L9 3"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderDashTable() {
+    const tbody = document.getElementById('dash-tbody');
+    tbody.innerHTML = users.slice(0,5).map((u, i) => `
+      <tr>
+        <td>
+          <div class="user-row-info">
+            <div class="avatar-sm ${avatarColors[i % 6]}">${initials(u.name)}</div>
+            <span style="font-weight:500;font-size:13px;">${u.name}</span>
+          </div>
+        </td>
+        <td>
+          <span class="badge ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}" style="font-size:10px;">
+            ${u.role === 'admin' ? 'Admin' : 'Usuario'}
+          </span>
+        </td>
+        <td>
+          <span class="status-dot">
+            <span class="dot ${u.active ? 'dot-green' : 'dot-gray'}"></span>
+            ${u.active ? 'Activo' : 'Inactivo'}
+          </span>
+        </td>
+        <td style="font-size:12px;color:var(--muted);">${u.date}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderMiniChart() {
+    const data = [2, 5, 3, 8, 4, 6, 3];
+    const max = Math.max(...data);
+    const colors = ['#E8D5C8','#E8D5C8','#D4A88A','#C9540A','#D4A88A','#E8D5C8','#E8D5C8'];
+    const chart = document.getElementById('mini-chart');
+    chart.innerHTML = data.map((v, i) => `
+      <div class="bar" style="height:${(v/max)*100}%;background:${colors[i]};" title="${v} registros"></div>
+    `).join('');
+  }
+
+  function filterUsers() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const role = document.getElementById('role-filter').value;
+    const filtered = users.filter(u =>
+      (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
+      (!role || u.role === role)
+    );
+    renderUsersTable(filtered);
+    document.getElementById('pag-info').textContent = `Mostrando 1–${Math.min(filtered.length, 8)} de ${filtered.length} usuarios`;
+  }
+
+  // ── MODAL: CREATE / EDIT ──
+  function openModal(mode, id) {
+    const modal = document.getElementById('modal-user');
+    const title = document.getElementById('modal-title');
+
+    if (mode === 'create') {
+      title.textContent = 'Nuevo usuario';
+      document.getElementById('m-name').value = '';
+      document.getElementById('m-surname').value = '';
+      document.getElementById('m-email').value = '';
+      document.getElementById('m-pwd').value = 'temp123';
+      document.getElementById('m-role').value = 'user';
+    } else {
+      const u = users.find(u => u.id === id);
+      if (!u) return;
+      title.textContent = 'Editar usuario';
+      const parts = u.name.split(' ');
+      document.getElementById('m-name').value = parts[0] || '';
+      document.getElementById('m-surname').value = parts.slice(1).join(' ') || '';
+      document.getElementById('m-email').value = u.email;
+      document.getElementById('m-pwd').value = '';
+      document.getElementById('m-role').value = u.role;
+    }
+    modal.classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-user').classList.remove('show');
+  }
+
+  async function saveUser() {
+    const name = document.getElementById('m-name').value;
+    const surname = document.getElementById('m-surname').value;
+    const email = document.getElementById('m-email').value;
+    const role = document.getElementById('m-role').value;
+
+    if (!name || !email) { toast('Completa los campos obligatorios'); return; }
+
+    await new Promise(r => setTimeout(r, 600));
+
+    const newUser = {
+      id: users.length + 1,
+      name: `${name} ${surname}`.trim(),
+      email,
+      role,
+      auth: 'email',
+      date: new Date().toLocaleDateString('es-ES'),
+      active: true
+    };
+    users.unshift(newUser);
+    renderUsersTable(users);
+    renderDashTable();
+    closeModal();
+    toast('✓ Usuario guardado correctamente', 'success');
+  }
+
+  // ── MODAL: DELETE ──
+  function openDeleteModal(id, name) {
+    deleteTarget = id;
+    document.getElementById('delete-name').textContent = name;
+    document.getElementById('modal-delete').classList.add('show');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('modal-delete').classList.remove('show');
+    deleteTarget = null;
+  }
+
+  async function confirmDelete() {
+    await new Promise(r => setTimeout(r, 400));
+    users = users.filter(u => u.id !== deleteTarget);
+    renderUsersTable(users);
+    renderDashTable();
+    closeDeleteModal();
+    toast('Usuario eliminado');
+  }
+
+  // ── CHANGE PASSWORD ──
+  async function simulateChangePwd() {
+    const cur = document.getElementById('cp-current').value;
+    const n = document.getElementById('cp-new').value;
+    const c = document.getElementById('cp-confirm').value;
+    if (!cur || !n || !c) { toast('Completa todos los campos'); return; }
+    if (n !== c) { toast('Las contraseñas no coinciden'); return; }
+    if (n.length < 8) { toast('Mínimo 8 caracteres'); return; }
+    await new Promise(r => setTimeout(r, 800));
+    toast('✓ Contraseña actualizada correctamente', 'success');
+    document.getElementById('cp-current').value = '';
+    document.getElementById('cp-new').value = '';
+    document.getElementById('cp-confirm').value = '';
+  }
+
+  // ── TOAST ──
+  function toast(msg, type) {
+    const t = document.getElementById('toaster');
+    const el = document.createElement('div');
+    el.className = 'toast';
+    if (type === 'success') el.style.background = '#1A6B3C';
+    el.textContent = msg;
+    t.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transition = 'opacity 0.3s';
+      setTimeout(() => el.remove(), 300);
+    }, 2800);
+  }
+
+  // ── CLOSE MODAL ON OVERLAY CLICK ──
+  document.getElementById('modal-user').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+  document.getElementById('modal-delete').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+  });
+
+  // ── INIT ──
+  renderUsersTable(users);
+  renderDashTable();
+  renderMiniChart();
+</script>
+
+</body>
+</html>

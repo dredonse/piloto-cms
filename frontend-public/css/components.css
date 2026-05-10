@@ -1,0 +1,329 @@
+/* ============================================================
+   COMPONENTS.CSS — Componentes reutilizables
+   Botones, inputs, alertas, formularios, toaster, divider...
+   ============================================================ */
+
+/* ── BOTONES ── */
+.btn-primary {
+  padding: 12px 28px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all 0.15s;
+  letter-spacing: -0.01em;
+}
+.btn-primary:hover { background: var(--accent-dk); transform: translateY(-1px); }
+
+.btn-secondary {
+  padding: 12px 28px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all 0.15s;
+}
+.btn-secondary:hover { background: var(--bg); }
+
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: -0.01em;
+  margin-top: 4px;
+}
+.btn-submit:hover  { background: var(--accent-dk); }
+.btn-submit:active { transform: scale(0.99); }
+
+/* Estado de carga en botón submit */
+.btn-submit.loading {
+  background: var(--muted);
+  cursor: not-allowed;
+}
+.btn-submit.loading::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Botón de Google */
+.btn-google {
+  width: 100%;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.15s;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+.btn-google:hover { background: var(--bg); border-color: var(--muted); }
+
+/* ── TARJETA DE FORMULARIO ── */
+.form-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 36px;
+  box-shadow: var(--shadow);
+}
+
+.form-header  { margin-bottom: 28px; }
+
+.form-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.form-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.form-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── CAMPOS DE FORMULARIO ── */
+.field         { margin-bottom: 16px; }
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.field input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.field input:focus       { border-color: var(--accent); background: white; }
+.field input::placeholder { color: var(--muted); opacity: 0.6; }
+
+/* Checkbox */
+.field-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.field-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.field-check label {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+/* ── MEDIDOR DE FORTALEZA DE CONTRASEÑA ── */
+.pwd-strength {
+  margin-top: 8px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.pwd-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.pwd-bar.active { background: var(--accent); }
+
+.pwd-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+/* Reglas de contraseña */
+.pwd-rules {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pwd-rule {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pwd-rule .r-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.pwd-rule.ok            { color: var(--success); }
+.pwd-rule.ok .r-dot     { background: var(--success); }
+
+/* ── DIVISOR ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.divider span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* ── ALERTAS ── */
+.alert {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: none;
+}
+.alert.show    { display: block; }
+
+.alert-error {
+  background: var(--error-lt);
+  color: var(--error);
+  border: 1px solid #FCA5A5;
+}
+.alert-success {
+  background: var(--success-lt);
+  color: var(--success);
+  border: 1px solid #86EFAC;
+}
+
+/* ── PIE DE FORMULARIO ── */
+.form-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.form-footer a,
+.link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+.form-footer a:hover,
+.link:hover { text-decoration: underline; }
+
+/* ── ESTADO DE ÉXITO ── */
+.success-state {
+  text-align: center;
+  padding: 20px 0;
+  display: none;
+}
+.success-icon {
+  width: 56px;
+  height: 56px;
+  background: var(--success-lt);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+/* ── TOASTER ── */
+.toaster {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--text);
+  color: var(--surface);
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  max-width: 320px;
+  animation: slideUp 0.3s ease;
+  pointer-events: all;
+}
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}

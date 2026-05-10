@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piloto CMS — Design system</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <style>
+      .preview-hero {
+        padding-block: var(--ds-space-12);
+        border-bottom: 1px solid var(--ds-color-border);
+        margin-bottom: var(--ds-space-10);
+      }
+      .preview-grid {
+        display: grid;
+        gap: var(--ds-space-6);
+      }
+      @media (min-width: 768px) {
+        .preview-grid--2 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="preview-hero">
+      <div class="ds-container">
+        <p class="ds-badge" style="margin-bottom: var(--ds-space-4)">Design system</p>
+        <h1 class="ds-h1">Piloto CMS</h1>
+        <p class="ds-lead" style="margin-top: var(--ds-space-4); max-width: 40rem">
+          Tokens, base y componentes con prefijo <span class="ds-mono">.ds-</span>. Abre este archivo en el
+          navegador para validar estilos antes de usarlos en público / privado.
+        </p>
+      </div>
+    </header>
+
+    <main class="ds-container" style="padding-bottom: var(--ds-space-12)">
+      <section class="ds-stack ds-stack--loose" aria-labelledby="sec-tipografia">
+        <h2 class="ds-h2" id="sec-tipografia">Tipografía</h2>
+        <div class="ds-card">
+          <h3 class="ds-card__title">Jerarquía</h3>
+          <div class="ds-stack">
+            <h2 class="ds-h2">Encabezado nivel 2</h2>
+            <p class="ds-lead">Texto introductorio con clase <span class="ds-mono">.ds-lead</span>.</p>
+            <p class="ds-muted">Texto secundario con <span class="ds-mono">.ds-muted</span>.</p>
+            <p class="ds-mono">font-mono para código o rutas API</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="ds-divider" />
+
+      <section class="ds-stack ds-stack--loose" aria-labelledby="sec-botones">
+        <h2 class="ds-h2" id="sec-botones">Botones</h2>
+        <div class="ds-card">
+          <div class="ds-stack" style="flex-direction: row; flex-wrap: wrap; align-items: center">
+            <button type="button" class="ds-button ds-button--primary">Primary</button>
+            <button type="button" class="ds-button ds-button--secondary">Secondary</button>
+            <button type="button" class="ds-button ds-button--ghost">Ghost</button>
+            <button type="button" class="ds-button ds-button--danger">Danger</button>
+            <button type="button" class="ds-button ds-button--primary" disabled>Deshabilitado</button>
+          </div>
+        </div>
+      </section>
+
+      <hr class="ds-divider" />
+
+      <section class="ds-stack ds-stack--loose" aria-labelledby="sec-formularios">
+        <h2 class="ds-h2" id="sec-formularios">Formularios</h2>
+        <div class="preview-grid preview-grid--2">
+          <div class="ds-card">
+            <h3 class="ds-card__title">Campos</h3>
+            <form class="ds-stack" onsubmit="event.preventDefault()">
+              <div class="ds-field">
+                <label class="ds-label" for="demo-email">Email</label>
+                <input class="ds-input" id="demo-email" type="email" placeholder="tu@email.com" autocomplete="off" />
+              </div>
+              <div class="ds-field">
+                <label class="ds-label" for="demo-pass">Contraseña</label>
+                <input class="ds-input" id="demo-pass" type="password" placeholder="••••••••" />
+              </div>
+              <div class="ds-field">
+                <label class="ds-label" for="demo-area">Mensaje</label>
+                <textarea class="ds-textarea" id="demo-area" placeholder="Texto multilínea…"></textarea>
+              </div>
+              <div class="ds-field">
+                <label class="ds-label" for="demo-select">Rol</label>
+                <select class="ds-select" id="demo-select">
+                  <option value="user">Usuario</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="ds-stack">
+            <div class="ds-card">
+              <h3 class="ds-card__title">Badges</h3>
+              <p class="ds-card__body" style="margin-bottom: var(--ds-space-4)">Etiquetas compactas.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: var(--ds-space-2)">
+                <span class="ds-badge">Default</span>
+                <span class="ds-badge ds-badge--success">Éxito</span>
+                <span class="ds-badge ds-badge--danger">Error</span>
+              </div>
+            </div>
+            <div class="ds-card">
+              <h3 class="ds-card__title">Alertas</h3>
+              <div class="ds-stack ds-stack--tight">
+                <div class="ds-alert ds-alert--success">Operación completada correctamente.</div>
+                <div class="ds-alert ds-alert--error">Algo salió mal. Revisa los datos e inténtalo de nuevo.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

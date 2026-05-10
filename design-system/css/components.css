@@ -1,0 +1,257 @@
+/**
+ * Piloto CMS — componentes reutilizables (prefijo .ds-).
+ */
+
+.ds-container {
+  width: 100%;
+  max-width: var(--ds-container-max);
+  margin-inline: auto;
+  padding-inline: var(--ds-space-4);
+}
+
+@media (min-width: 640px) {
+  .ds-container {
+    padding-inline: var(--ds-space-6);
+  }
+}
+
+.ds-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+}
+
+.ds-stack--tight {
+  gap: var(--ds-space-2);
+}
+
+.ds-stack--loose {
+  gap: var(--ds-space-6);
+}
+
+/* Tipografía */
+.ds-h1 {
+  margin: 0;
+  font-size: var(--ds-text-3xl);
+  font-weight: 700;
+  line-height: var(--ds-leading-tight);
+  letter-spacing: -0.02em;
+}
+
+.ds-h2 {
+  margin: 0;
+  font-size: var(--ds-text-2xl);
+  font-weight: 600;
+  line-height: var(--ds-leading-tight);
+}
+
+.ds-lead {
+  margin: 0;
+  font-size: var(--ds-text-lg);
+  color: var(--ds-color-text-muted);
+  line-height: var(--ds-leading-relaxed);
+}
+
+.ds-muted {
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-sm);
+}
+
+.ds-mono {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-sm);
+}
+
+/* Tarjeta */
+.ds-card {
+  background: var(--ds-color-surface);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  padding: var(--ds-space-6);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-card__title {
+  margin: 0 0 var(--ds-space-2);
+  font-size: var(--ds-text-lg);
+  font-weight: 600;
+}
+
+.ds-card__body {
+  margin: 0;
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-sm);
+}
+
+/* Campos */
+.ds-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.ds-label {
+  font-size: var(--ds-text-sm);
+  font-weight: 500;
+  color: var(--ds-color-text-muted);
+}
+
+.ds-input,
+.ds-textarea,
+.ds-select {
+  width: 100%;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  font: inherit;
+  color: var(--ds-color-text);
+  background: var(--ds-color-surface-raised);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ds-input::placeholder,
+.ds-textarea::placeholder {
+  color: var(--ds-color-text-muted);
+  opacity: 0.8;
+}
+
+.ds-input:hover,
+.ds-textarea:hover,
+.ds-select:hover {
+  border-color: var(--ds-color-text-muted);
+}
+
+.ds-input:focus,
+.ds-textarea:focus,
+.ds-select:focus {
+  border-color: var(--ds-color-primary);
+  box-shadow: 0 0 0 1px var(--ds-color-primary);
+  outline: none;
+}
+
+.ds-textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+/* Botones */
+.ds-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-3) var(--ds-space-5);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  font-weight: 600;
+  line-height: 1;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
+}
+
+.ds-button:active {
+  transform: translateY(1px);
+}
+
+.ds-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ds-button--primary {
+  color: #fff;
+  background: var(--ds-color-primary);
+  border-color: var(--ds-color-primary);
+}
+
+.ds-button--primary:hover:not(:disabled) {
+  background: var(--ds-color-primary-hover);
+  border-color: var(--ds-color-primary-hover);
+}
+
+.ds-button--secondary {
+  color: var(--ds-color-text);
+  background: var(--ds-color-surface-raised);
+  border-color: var(--ds-color-border);
+}
+
+.ds-button--secondary:hover:not(:disabled) {
+  border-color: var(--ds-color-text-muted);
+}
+
+.ds-button--ghost {
+  color: var(--ds-color-text-muted);
+  background: transparent;
+  border-color: transparent;
+}
+
+.ds-button--ghost:hover:not(:disabled) {
+  color: var(--ds-color-text);
+  background: var(--ds-color-surface-raised);
+}
+
+.ds-button--danger {
+  color: #fff;
+  background: var(--ds-color-danger);
+  border-color: var(--ds-color-danger);
+}
+
+.ds-button--danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* Badge */
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ds-space-1) var(--ds-space-3);
+  font-size: var(--ds-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  background: var(--ds-color-primary-muted);
+  color: var(--ds-color-primary-hover);
+}
+
+.ds-badge--success {
+  background: rgba(61, 214, 140, 0.15);
+  color: var(--ds-color-success);
+}
+
+.ds-badge--danger {
+  background: var(--ds-color-danger-muted);
+  color: #ff8a8a;
+}
+
+/* Alerta inline */
+.ds-alert {
+  padding: var(--ds-space-4);
+  border-radius: var(--ds-radius-md);
+  font-size: var(--ds-text-sm);
+  border: 1px solid var(--ds-color-border);
+  background: var(--ds-color-surface-raised);
+}
+
+.ds-alert--error {
+  border-color: rgba(241, 75, 75, 0.45);
+  background: var(--ds-color-danger-muted);
+  color: #ffc9c9;
+}
+
+.ds-alert--success {
+  border-color: rgba(61, 214, 140, 0.35);
+  background: rgba(61, 214, 140, 0.1);
+  color: #b8f5d3;
+}
+
+/* Separador */
+.ds-divider {
+  height: 1px;
+  margin: var(--ds-space-6) 0;
+  background: var(--ds-color-border);
+  border: 0;
+}
