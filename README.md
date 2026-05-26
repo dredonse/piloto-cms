@@ -8,9 +8,9 @@ Aplicación web dockerizada en entorno LAMP que gestiona usuarios con distintos 
 
 ## Alcance funcional
 
-### Frontend público (HTML, CSS, JS vanilla)
+### Frontend público (Vue 3 + Vite, migración progresiva)
 
-Accesible sin login.
+Accesible sin login. La vista **home** está en Vue; login, registro y recuperar contraseña siguen en HTML vanilla hasta completar la migración (rama de referencia: `vanilla`).
 
 Funcionalidades:
 
@@ -70,27 +70,34 @@ Aplicación dockerizada con Apache + PHP y MySQL. Permite despliegue sencillo y 
 
 ```
 piloto-cms/
-├── backend/                        ← API REST en PHP (MVC propio, sin frameworks externos)
+├── backend/      ← API REST en PHP (MVC propio, sin 													frameworks externos)
 │   ├── public/index.php            ← Punto de entrada, registra todas las rutas
 │   ├── config/bootstrap.php        ← Autoloader de clases
 │   └── src/
-│       ├── Core/                   ← Router, Database, Request, Response, Cors
+│       ├── Core/    ← Router, Database, Request, Response, Cors
 │       ├── Controllers/            ← AuthController, UsersController, StatsController, HealthController
 │       ├── Services/               ← AuthService, GoogleIdTokenVerifier
 │       ├── Repositories/           ← UserRepository, SessionRepository, PasswordResetRepository
 │       └── Middleware/             ← AuthGuard (protege rutas por token y rol)
-├── frontend-public/                ← SPA pública (HTML + CSS + JS vanilla)
-│   ├── index.html                  ← Entrada única, 4 vistas en una página
-│   ├── css/
-│   │   ├── variables.css           ← Design tokens (colores, tipografía, radios)
-│   │   ├── layout.css              ← Body, nav, sistema de páginas (.page / .page.active)
-│   │   ├── components.css          ← Botones, inputs, alertas, toaster, form-card
-│   │   └── pages.css               ← Estilos específicos: home, forgot, stat-inline
-│   └── js/
-│       ├── ui.js                   ← toast(), delay() — utilidades globales
-│       ├── router.js               ← goTo(page), resetForms() — SPA routing
-│       ├── password.js             ← checkPwd(), validatePassword() — medidor de fortaleza
-│       └── auth.js                 ← Flujos de autenticación + listeners centralizados en DOMContentLoaded
+├── frontend-public/      ← SPA pública (Vue 3 + Vite + vistas vanilla restantes)
+│   ├── index.html                  ← Entrada Vite; nav + 4 `<main class="page">` (home vía Vue)
+│   ├── package.json                ← Vue 3, Vite, @vitejs/plugin-vue
+│   ├── vite.config.js
+│   ├── src/
+│   │   ├── main.js                 ← Monta Vue en `#app` dentro de `#page-home`
+│   │   ├── App.vue
+│   │   └── views/
+│   │       └── PageHome.vue        ← Vista home migrada
+│   ├── css/                        ← Sin cambios (mismas hojas que en vanilla)
+│   │   ├── variables.css
+│   │   ├── layout.css
+│   │   ├── components.css
+│   │   └── pages.css
+│   └── js/                         ← Router y auth vanilla (MOCK sin backend)
+│       ├── ui.js
+│       ├── router.js
+│       ├── password.js
+│       └── auth.js
 ├── frontend-private/               ← Dashboard privado (pendiente de refactorizar)
 │   └── index.html                  ← HTML + CSS + JS inline (monolito, funcional como prototipo)
 ├── design-system/                  ← Tokens y componentes CSS compartidos entre frontends
@@ -182,23 +189,32 @@ Verificar que funciona:
 http://localhost:8080/api/health   → { "status": "ok" }
 ```
 
-### 2. Frontend (servidor estático)
+### 2. Frontend público (Vite + Vue)
 
-Desde la raíz del proyecto, en una nueva terminal:
+En una nueva terminal:
 
 ```bash
-# Con Python
-python3 -m http.server 3000
-
-# Con Node
-npx serve . -p 3000
+cd frontend-public
+npm install
+npm run dev
 ```
 
-Abrir en el navegador:
-- `http://localhost:3000/frontend-public/index.html` → zona pública
-- `http://localhost:3000/frontend-private/index.html` → zona privada
+Abrir `http://localhost:5173` (Vite abre el navegador por defecto).
 
-> Los frontends usan rutas absolutas que requieren servirse desde la raíz del proyecto. No abrir como archivo directamente (doble clic) o los CSS y JS no cargarán.
+> Tras la migración a Vue, el público **requiere Vite** en desarrollo. La rama `vanilla` conserva la versión servible solo con HTTP estático.
+
+### 3. Frontend privado (servidor estático)
+
+Desde la raíz del proyecto:
+
+```bash
+python3 -m http.server 3000
+# o: npx serve . -p 3000
+```
+
+Abrir `http://localhost:3000/frontend-private/index.html`
+
+> No abrir los HTML con doble clic; los assets no cargarán correctamente.
 
 ### Credenciales de prueba
 
@@ -231,24 +247,27 @@ Rol:        admin
 
 ---
 
-## Estado del proyecto (actualizado: 2026-05-10)
+## Estado del proyecto (actualizado: 2026-05-26)
 
 ### Repositorio
 `https://github.com/dredonse/piloto-cms`
 
 ### Ramas
 - `main` — producción
-- `development` — integración (rama activa, aquí mergean las features)
+- `development` — integración, aquí mergean las features
+- `vanilla` — referencia congelada del frontend en Vanilla JS (nunca se mergea)
+- `feature/vue-migration` — migración progresiva del frontend a Vue 3 + Vite
 
 ### Rama activa
-`development`
+`feature/vue-migration`
 
 ### Arquitectura frontend-public
-- SPA de página única: 4 `<main class="page">` — `page-home`, `page-login`, `page-register`, `page-forgot`
-- Routing manejado por `router.js::goTo()` mediante eventos JS
-- Scripts cargados con `defer` en `<head>`; todos los listeners en `DOMContentLoaded` en `auth.js`
-- Sin framework (HTML + CSS + JS vanilla)
-- Modo MOCK activo: las llamadas a API están simuladas con `delay()`, marcadas con comentarios `// --- MOCK ---`
+- SPA híbrida: `#page-home` renderizada por **Vue 3** (`PageHome.vue`); `page-login`, `page-register`, `page-forgot` siguen en HTML vanilla
+- Routing sin cambios: `router.js::goTo()` alterna `.page.active` sobre los cuatro `<main>`
+- CSS existente (`css/*.css`) sin modificar; mismos selectores y clases que en la rama `vanilla`
+- Bundler/dev server: **Vite** (`cd frontend-public && npm run dev`)
+- Scripts vanilla con `defer` en `<head>`; entrada Vue con `<script type="module" src="/src/main.js">`
+- Modo MOCK activo en `auth.js` (sin conexión al backend en esta fase)
 
 ### Estado del frontend-private
 - Archivo único monolítico: HTML + CSS inline + JS inline
@@ -293,8 +312,8 @@ Rol:        admin
 
 **Resultado del nav:**
 ```
-[Logo Piloto CMS]              [Iniciar sesión]  [Crear cuenta]
-                               (ghost pill)      (solid accent)
+[Logo Piloto CMS]         [Iniciar sesión]  [Crear cuenta]
+                           (ghost pill)      (solid accent)
 ```
 
 ---
@@ -346,8 +365,43 @@ Rol:        admin
 
 ---
 
+## Trabajo completado en sesión 2026-05-26
+
+### Paso 1 — Base Vue 3 + Vite y migración de `page-home`
+
+**Objetivo:** Montar la estructura del proyecto Vue sin romper login/registro/forgot ni conectar al backend.
+
+| Archivo | Cambio |
+|---------|--------|
+| `frontend-public/package.json` | Nuevo. Dependencias: `vue`, `vite`, `@vitejs/plugin-vue`. Scripts: `dev`, `build`, `preview`. |
+| `frontend-public/vite.config.js` | Nuevo. Plugin Vue, `outDir: dist`, puerto dev 5173. |
+| `frontend-public/src/main.js` | Monta la app en `#app` dentro de `#page-home`. |
+| `frontend-public/src/App.vue` | Contenedor que renderiza `PageHome`. |
+| `frontend-public/src/views/PageHome.vue` | Contenido de la landing (hero, stat, CTAs, feature cards) migrado desde el HTML. |
+| `frontend-public/index.html` | `#page-home` solo contiene `<div id="app">`; añadido `<script type="module" src="/src/main.js">`. CSS importado desde `main.js` (mismos `css/*.css`). Vistas login/register/forgot intactas. |
+| `frontend-public/vite.config.js` | `base: './'` y plugin que copia `js/` y `css/` a `dist/` en el build. |
+| `frontend-public/js/auth.js` | CTAs del home: delegación de eventos en `#page-home` (los botones los crea Vue tras `DOMContentLoaded`). Mocks `simulate*` sin cambios. |
+
+**Cómo arrancar el frontend público en desarrollo:**
+
+```bash
+cd frontend-public
+npm install
+npm run dev
+```
+
+Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben comportarse igual que en `vanilla` para home + auth.
+
+**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`.
+
+---
+
 ## Próximos pasos pendientes
 
+- [ ] Migrar `page-login` a componente Vue (`PageLogin.vue`)
+- [ ] Migrar `page-register` a Vue (`PageRegister.vue`)
+- [ ] Migrar `page-forgot` a Vue (`PageForgot.vue`)
+- [ ] Valorar router Vue (p. ej. Vue Router) cuando las cuatro vistas estén en Vue
 - [ ] Conectar `frontend-public` al backend real (sustituir bloques MOCK por fetch)
   - [ ] `simulateLogin()` → `POST /api/auth/login`
   - [ ] `simulateRegister()` → `POST /api/auth/register`
@@ -371,9 +425,10 @@ Rol:        admin
 **Decisión:** Todos los event listeners se registran en un único bloque `DOMContentLoaded` en `auth.js`, en lugar de `onclick`/`oninput` inline en el HTML.
 **Razonamiento:** Separación de responsabilidades (HTML = estructura, JS = comportamiento). Facilita el mantenimiento y evita la dispersión de lógica en el markup.
 
-### D3 — Sin framework JS (vanilla)
-**Decisión:** Frontend público implementado en HTML + CSS + JS vanilla, sin Vue, React ni ningún framework.
-**Razonamiento:** El proyecto es un CMS piloto de demostración. La complejidad actual no justifica añadir una capa de framework. El README menciona "HTML, CSS, JS, VUE..." como opciones, se elige la más simple para el MVP.
+### ~~D3 — Sin framework JS (vanilla)~~ — SUPERADA por D11
+**Decisión original:** Frontend público implementado en HTML + CSS + JS vanilla, sin Vue, React ni ningún framework.
+**Razonamiento original:** El proyecto es un CMS piloto de demostración. La complejidad actual no justifica añadir una capa de framework.
+**Estado:** Decisión superada en sesión 2026-05-26. Ver D11.
 
 ### D4 — Modo MOCK explícito en auth.js
 **Decisión:** Las llamadas a la API están comentadas y marcadas con `// --- MOCK ---`. Las funciones `simulate*()` replican el comportamiento esperado con `delay()`.
@@ -402,6 +457,16 @@ Rol:        admin
 ### D10 — Documentacion/ ignorada en git pero conservada en local (sesión 2026-05-10)
 **Decisión:** La carpeta `Documentacion/` se añade al `.gitignore` y no se sube al repositorio remoto.
 **Razonamiento:** Contiene capturas de pantalla, PDFs y documentos de trabajo de sesiones anteriores que no aportan valor a quien clona el repo y engordan el historial git innecesariamente. Se conserva en local como material de estudio y referencia personal.
+
+### D11 — Migración del frontend a Vue 3 + Vite (sesión 2026-05-26)
+**Decisión:** Se migra el frontend-public de Vanilla JS a Vue 3 con Vite como bundler. La migración es progresiva: vista a vista, sin romper lo que funciona. La rama `vanilla` queda congelada como referencia.
+**Razonamiento:** El proyecto crecerá como CMS y la complejidad futura (estado compartido, componentes reutilizables, routing declarativo) justifica el uso de un framework. Vue 3 se elige por su curva de aprendizaje gradual, su proximidad al HTML/CSS/JS vanilla que ya existe, y la calidad de su documentación oficial. Vite se elige como bundler por ser el estándar actual en proyectos Vue y por su velocidad de desarrollo.
+**Impacto:** La decisión D3 queda superada. La rama `feature/vue-migration` sale desde `development` y se mergeará cuando todas las vistas estén migradas y probadas.
+
+### D12 — Migración híbrida: Vue en home, vanilla en el resto (sesión 2026-05-26)
+**Decisión:** Mantener un único `index.html` con los cuatro `<main class="page">`. Solo el interior de `#page-home` pasa a Vue; login, registro y forgot permanecen en HTML hasta siguientes sesiones. El router y `auth.js` siguen siendo globales vanilla.
+**Razonamiento:** Minimiza el riesgo de regresiones: `goTo()` y los mocks no se reescriben. Los estilos CSS actuales siguen aplicando porque el markup de `PageHome.vue` replica las mismas clases e IDs (`stat-users`, `home-btn-register`, etc.). Los CTAs del home usan delegación en `#page-home` porque Vue monta los botones después de `DOMContentLoaded`. Los cuatro CSS se importan en `main.js` para que dev y build compartan la misma entrada.
+**Impacto:** El desarrollo local del público pasa a `npm run dev` en `frontend-public/`. Abrir `index.html` con doble clic ya no basta (hace falta Vite para compilar Vue). `npm run build` genera `dist/` con el bundle Vue más copias de `js/` y `css/` vanilla.
 
 ---
 
