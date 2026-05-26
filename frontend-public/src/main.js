@@ -4,9 +4,15 @@ import '../css/components.css'
 import '../css/pages.css'
 
 import { createApp } from 'vue'
-import App from './App.vue'
+import PageHome from './views/PageHome.vue'
+import PageLogin from './views/PageLogin.vue'
 
-const root = document.getElementById('app')
-if (root) {
-  createApp(App).mount(root)
+const homeRoot = document.getElementById('app')
+if (homeRoot) {
+  createApp(PageHome).mount(homeRoot)
+}
+
+const loginRoot = document.getElementById('app-login')
+if (loginRoot) {
+  createApp(PageLogin).mount(loginRoot)
 }

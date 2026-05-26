@@ -421,20 +421,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn.id === 'home-btn-login') goTo('login');
   });
 
-  // ── Login ──────────────────────────────────────────────────
-  document.getElementById('btn-google-login')
-      .addEventListener('click', simulateGoogle);
+  // ── Login (Vue monta el formulario tras DOMContentLoaded) ──
+  document.getElementById('page-login')?.addEventListener('click', (e) => {
+    const el = e.target.closest('#btn-google-login, #link-to-forgot, #link-to-register');
+    if (!el) return;
+    if (el.id === 'btn-google-login') simulateGoogle();
+    if (el.id === 'link-to-forgot') goTo('forgot');
+    if (el.id === 'link-to-register') {
+      e.preventDefault();
+      goTo('register');
+    }
+  });
 
-  document.getElementById('login-form')
-      .addEventListener('submit', (e) => {
-        e.preventDefault();
-        simulateLogin();
-      });
-
-  document.getElementById('link-to-forgot')
-      .addEventListener('click', () => goTo('forgot'));
-  document.getElementById('link-to-register')
-      .addEventListener('click', () => goTo('register'));
+  document.getElementById('page-login')?.addEventListener('submit', (e) => {
+    if (e.target.id !== 'login-form') return;
+    e.preventDefault();
+    simulateLogin();
+  });
 
   // ── Registro ───────────────────────────────────────────────
   // Registro — blur en cada campo para feedback al salir
