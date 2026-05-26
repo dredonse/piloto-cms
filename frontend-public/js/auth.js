@@ -413,11 +413,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nav-pill-register')
       .addEventListener('click', () => goTo('register'));
 
-  // ── Página de inicio ───────────────────────────────────────
-  document.getElementById('home-btn-register')
-      .addEventListener('click', () => goTo('register'));
-  document.getElementById('home-btn-login')
-      .addEventListener('click', () => goTo('login'));
+  // ── Página de inicio (Vue monta los botones tras DOMContentLoaded) ──
+  document.getElementById('page-home')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    if (btn.id === 'home-btn-register') goTo('register');
+    if (btn.id === 'home-btn-login') goTo('login');
+  });
 
   // ── Login ──────────────────────────────────────────────────
   document.getElementById('btn-google-login')
