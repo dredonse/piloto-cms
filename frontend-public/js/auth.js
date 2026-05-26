@@ -439,40 +439,39 @@ document.addEventListener('DOMContentLoaded', () => {
     simulateLogin();
   });
 
-  // ── Registro ───────────────────────────────────────────────
-  // Registro — blur en cada campo para feedback al salir
-  document.getElementById('reg-name')
-      .addEventListener('blur', validateRegName);
+  // ── Registro (Vue monta el formulario tras DOMContentLoaded) ──
+  const pageRegister = document.getElementById('page-register');
+  if (pageRegister) {
+    // focusout sustituye blur: el evento blur no burbujea; focusout sí
+    pageRegister.addEventListener('focusout', (e) => {
+      if (e.target.id === 'reg-name') validateRegName();
+      if (e.target.id === 'reg-email') validateRegEmail();
+      if (e.target.id === 'reg-pwd') validateRegPwd();
+    });
 
-  document.getElementById('reg-email')
-      .addEventListener('blur', validateRegEmail);
+    pageRegister.addEventListener('input', (e) => {
+      if (e.target.id === 'reg-pwd') checkPwd(e.target.value);
+      if (e.target.id === 'reg-pwd-confirm') validateRegPwdConfirm();
+    });
 
-  document.getElementById('reg-pwd')
-      .addEventListener('blur', validateRegPwd);
-
-// input en lugar de blur: mientras escribe la confirmación
-// comprueba en tiempo real si ya coincide con la contraseña
-  document.getElementById('reg-pwd-confirm')
-      .addEventListener('input', validateRegPwdConfirm);
-
-  document.getElementById('btn-google-register')
-      .addEventListener('click', simulateGoogle);
-
-  document.getElementById('reg-form')
-      .addEventListener('submit', (e) => {
+    pageRegister.addEventListener('click', (e) => {
+      const el = e.target.closest(
+          '#btn-google-register, #link-to-login, #btn-success-to-login, #err-go-login');
+      if (!el) return;
+      if (el.id === 'btn-google-register') simulateGoogle();
+      if (el.id === 'link-to-login') {
         e.preventDefault();
-        simulateRegister();
-      });
+        goTo('login');
+      }
+      if (el.id === 'btn-success-to-login' || el.id === 'err-go-login') goTo('login');
+    });
 
-  // Indicador de seguridad de contraseña (antes era oninput en el HTML)
-  document.getElementById('reg-pwd')
-      .addEventListener('input', (e) => checkPwd(e.target.value));
-
-  document.getElementById('link-to-login')
-      .addEventListener('click', () => goTo('login'));
-
-  document.getElementById('btn-success-to-login')
-      .addEventListener('click', () => goTo('login'));
+    pageRegister.addEventListener('submit', (e) => {
+      if (e.target.id !== 'reg-form') return;
+      e.preventDefault();
+      simulateRegister();
+    });
+  }
 
   // ── Recuperar contraseña ───────────────────────────────────
   // Reset — mismo patrón que el registro

@@ -10,7 +10,7 @@ Aplicación web dockerizada en entorno LAMP que gestiona usuarios con distintos 
 
 ### Frontend público (Vue 3 + Vite, migración progresiva)
 
-Accesible sin login. Las vistas **home** y **login** están en Vue; registro y recuperar contraseña siguen en HTML vanilla hasta completar la migración (rama de referencia: `vanilla`).
+Accesible sin login. Las vistas **home**, **login** y **register** están en Vue; recuperar contraseña sigue en HTML vanilla hasta completar la migración (rama de referencia: `vanilla`).
 
 Funcionalidades:
 
@@ -84,10 +84,11 @@ piloto-cms/
 │   ├── package.json                ← Vue 3, Vite, @vitejs/plugin-vue
 │   ├── vite.config.js
 │   ├── src/
-│   │   ├── main.js                 ← Monta una app Vue por vista migrada (`#app`, `#app-login`)
+│   │   ├── main.js                 ← Monta una app Vue por vista migrada (`#app`, `#app-login`, `#app-register`)
 │   │   └── views/
 │   │       ├── PageHome.vue        ← Vista home migrada
-│   │       └── PageLogin.vue       ← Vista login migrada
+│   │       ├── PageLogin.vue       ← Vista login migrada
+│   │       └── PageRegister.vue    ← Vista registro migrada
 │   ├── css/                        ← Sin cambios (mismas hojas que en vanilla)
 │   │   ├── variables.css
 │   │   ├── layout.css
@@ -247,7 +248,7 @@ Rol:        admin
 
 ---
 
-## Estado del proyecto (actualizado: 2026-05-27)
+## Estado del proyecto (actualizado: 2026-05-28)
 
 ### Repositorio
 `https://github.com/dredonse/piloto-cms`
@@ -262,7 +263,7 @@ Rol:        admin
 `feature/vue-migration`
 
 ### Arquitectura frontend-public
-- SPA híbrida: `#page-home` y `#page-login` en **Vue 3** (`PageHome.vue`, `PageLogin.vue`); `page-register` y `page-forgot` siguen en HTML vanilla
+- SPA híbrida: `#page-home`, `#page-login` y `#page-register` en **Vue 3**; solo `page-forgot` sigue en HTML vanilla
 - Routing sin cambios: `router.js::goTo()` alterna `.page.active` sobre los cuatro `<main>`
 - CSS existente (`css/*.css`) sin modificar; mismos selectores y clases que en la rama `vanilla`
 - Bundler/dev server: **Vite** (`cd frontend-public && npm run dev`)
@@ -420,9 +421,32 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 
 ---
 
+## Trabajo completado en sesión 2026-05-28
+
+### Paso 3 — Migración de `page-register` a Vue
+
+**Objetivo:** Mover el formulario de registro (incl. estado de éxito) a `PageRegister.vue` sin reimplementar validación, medidor de contraseña ni mocks.
+
+| Archivo | Cambio |
+|---------|--------|
+| `frontend-public/src/views/PageRegister.vue` | Nuevo. Formulario completo, medidor `pwd-strength`, checkbox términos, pantalla `reg-success`. Mismos IDs que el HTML vanilla. |
+| `frontend-public/src/main.js` | Tercera instancia `createApp(PageRegister)` en `#app-register`. |
+| `frontend-public/index.html` | `#page-register` solo contiene `<div id="app-register">`. |
+| `frontend-public/js/auth.js` | Registro: delegación en `#page-register` — `focusout` (validación blur), `input` (`checkPwd` / confirmación), `click` (Google, enlaces login, `err-go-login` dinámico), `submit` → `simulateRegister()`. |
+
+**Comportamiento conservado:**
+- Blur en nombre/email/contraseña → `validateReg*()` → `setFieldError()`
+- Input en `#reg-pwd` → `checkPwd()` (`password.js`)
+- Input en confirmación → `validateRegPwdConfirm()`
+- Submit → `simulateRegister()` (términos, email duplicado MOCK, éxito con `reg-success` y contador `stat-users`)
+- Enlaces a login y Google MOCK sin cambios
+
+**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`.
+
+---
+
 ## Próximos pasos pendientes
 
-- [ ] Migrar `page-register` a Vue (`PageRegister.vue`)
 - [ ] Migrar `page-forgot` a Vue (`PageForgot.vue`)
 - [ ] Valorar router Vue (p. ej. Vue Router) cuando las cuatro vistas estén en Vue
 - [ ] Conectar `frontend-public` al backend real (sustituir bloques MOCK por fetch)
@@ -494,7 +518,7 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 ### D13 — Una instancia Vue por vista migrada (sesión 2026-05-27)
 **Decisión:** Cada `<main class="page">` migrado tiene su propio punto de montaje (`#app`, `#app-login`, …) y su propio `createApp()` en `main.js`, en lugar de un único `App.vue` con router interno.
 **Razonamiento:** Encaja con la migración progresiva: no introduce Vue Router hasta que las cuatro vistas estén en Vue. El router vanilla (`goTo`) y `auth.js` siguen operando sobre IDs del DOM; la delegación de eventos en el `<main>` padre evita depender del orden de montaje de Vue.
-**Impacto:** Al migrar register/forgot se añaden `#app-register` y `#app-forgot` con el mismo patrón.
+**Impacto:** `#app-register` ya sigue este patrón; al migrar forgot se añadirá `#app-forgot`.
 
 ---
 
