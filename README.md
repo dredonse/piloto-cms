@@ -8,9 +8,9 @@ Aplicación web dockerizada en entorno LAMP que gestiona usuarios con distintos 
 
 ## Alcance funcional
 
-### Frontend público (Vue 3 + Vite, migración progresiva)
+### Frontend público (Vue 3 + Vite)
 
-Accesible sin login. Las vistas **home**, **login** y **register** están en Vue; recuperar contraseña sigue en HTML vanilla hasta completar la migración (rama de referencia: `vanilla`).
+Accesible sin login. Las cuatro vistas de la SPA (`home`, `login`, `register`, `forgot`) están en **Vue 3**. El `index.html` es solo shell (nav + contenedores de montaje). La lógica MOCK y el routing siguen en `js/auth.js` y `js/router.js` hasta conectar el backend. Rama de referencia histórica: `vanilla`.
 
 Funcionalidades:
 
@@ -79,16 +79,17 @@ piloto-cms/
 │       ├── Services/               ← AuthService, GoogleIdTokenVerifier
 │       ├── Repositories/           ← UserRepository, SessionRepository, PasswordResetRepository
 │       └── Middleware/             ← AuthGuard (protege rutas por token y rol)
-├── frontend-public/      ← SPA pública (Vue 3 + Vite + vistas vanilla restantes)
-│   ├── index.html                  ← Entrada Vite; nav + 4 `<main class="page">` (home vía Vue)
+├── frontend-public/      ← SPA pública 100 % Vue (contenido) + JS vanilla (router, auth MOCK)
+│   ├── index.html                  ← Shell Vite: nav, 4 `<main class="page">`, `#app*`, toaster
 │   ├── package.json                ← Vue 3, Vite, @vitejs/plugin-vue
 │   ├── vite.config.js
 │   ├── src/
-│   │   ├── main.js                 ← Monta una app Vue por vista migrada (`#app`, `#app-login`, `#app-register`)
+│   │   ├── main.js                 ← Cuatro `createApp()` (`#app`, `#app-login`, `#app-register`, `#app-forgot`)
 │   │   └── views/
-│   │       ├── PageHome.vue        ← Vista home migrada
-│   │       ├── PageLogin.vue       ← Vista login migrada
-│   │       └── PageRegister.vue    ← Vista registro migrada
+│   │       ├── PageHome.vue
+│   │       ├── PageLogin.vue
+│   │       ├── PageRegister.vue
+│   │       └── PageForgot.vue      ← Wizard recuperación (3 pasos)
 │   ├── css/                        ← Sin cambios (mismas hojas que en vanilla)
 │   │   ├── variables.css
 │   │   ├── layout.css
@@ -248,7 +249,7 @@ Rol:        admin
 
 ---
 
-## Estado del proyecto (actualizado: 2026-05-28)
+## Estado del proyecto (actualizado: 2026-05-29)
 
 ### Repositorio
 `https://github.com/dredonse/piloto-cms`
@@ -263,12 +264,12 @@ Rol:        admin
 `feature/vue-migration`
 
 ### Arquitectura frontend-public
-- SPA híbrida: `#page-home`, `#page-login` y `#page-register` en **Vue 3**; solo `page-forgot` sigue en HTML vanilla
-- Routing sin cambios: `router.js::goTo()` alterna `.page.active` sobre los cuatro `<main>`
-- CSS existente (`css/*.css`) sin modificar; mismos selectores y clases que en la rama `vanilla`
-- Bundler/dev server: **Vite** (`cd frontend-public && npm run dev`)
-- Scripts vanilla con `defer` en `<head>`; entrada Vue con `<script type="module" src="/src/main.js">`
-- Modo MOCK activo en `auth.js` (sin conexión al backend en esta fase)
+- **Migración Vue completada:** las cuatro vistas renderizan en componentes `.vue`; no queda markup de formularios en `index.html`
+- Routing: `router.js::goTo()` alterna `.page.active` sobre los cuatro `<main>` (sin Vue Router por ahora)
+- CSS en `css/*.css` importado desde `main.js`
+- Dev: **Vite** (`cd frontend-public && npm run dev`)
+- Comportamiento: listeners delegados en cada `#page-*` dentro de `auth.js`; funciones `simulate*` y validación sin cambios
+- Modo MOCK activo (sin conexión al backend)
 
 ### Estado del frontend-private
 - Archivo único monolítico: HTML + CSS inline + JS inline
@@ -445,10 +446,34 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 
 ---
 
+## Trabajo completado en sesión 2026-05-29
+
+### Paso 4 — Migración de `page-forgot` a Vue (frontend público 100 % Vue)
+
+**Objetivo:** Completar la migración de la SPA pública. El wizard de recuperación tiene **3 pasos** en el código (email → confirmación de envío → nueva contraseña); el token MOCK se muestra en el paso 2 como enlace de ejemplo.
+
+| Archivo | Cambio |
+|---------|--------|
+| `frontend-public/src/views/PageForgot.vue` | Nuevo. Tres pasos con IDs `forgot-step1`…`3`, formularios, `reset-form`, enlace volver al login. |
+| `frontend-public/src/main.js` | Cuarta instancia `createApp(PageForgot)` en `#app-forgot`. |
+| `frontend-public/index.html` | Eliminado ~100 líneas de HTML de formularios; solo shell + `#app-forgot`. Comentarios de prototipo limpiados. |
+| `frontend-public/js/auth.js` | Forgot: delegación en `#page-forgot` (`focusout`, `input`, `click`, `submit`). `simulateForgotStep1()`, `simulateForgotStep2()`, `simulateReset()` sin cambios. |
+
+**Comportamiento conservado:**
+- Paso 1 submit → `simulateForgotStep1()` + `validateForgotEmail()` / `setFieldError()`
+- Paso 2 → `simulateForgotStep2()` + temporizador `resend-timer`
+- Paso 3 → `validateNewPwd()` / `validateConfirmPwd()` en blur/input; submit → `simulateReset()`; `checkPwdReset()` en `#new-pwd` (las barras visuales `s1`–`s4` solo existen en registro — mismos IDs no duplicados en el DOM)
+- «Volver al login» → `goTo('login')`
+- `router.js::resetForms()` sigue reseteando los pasos del forgot
+
+**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`.
+
+---
+
 ## Próximos pasos pendientes
 
-- [ ] Migrar `page-forgot` a Vue (`PageForgot.vue`)
-- [ ] Valorar router Vue (p. ej. Vue Router) cuando las cuatro vistas estén en Vue
+- [ ] Probar flujo completo en `feature/vue-migration` y merge a `development`
+- [ ] Valorar **Vue Router** para sustituir `goTo()` cuando se conecte el backend
 - [ ] Conectar `frontend-public` al backend real (sustituir bloques MOCK por fetch)
   - [ ] `simulateLogin()` → `POST /api/auth/login`
   - [ ] `simulateRegister()` → `POST /api/auth/register`
@@ -508,17 +533,21 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 ### D11 — Migración del frontend a Vue 3 + Vite (sesión 2026-05-26)
 **Decisión:** Se migra el frontend-public de Vanilla JS a Vue 3 con Vite como bundler. La migración es progresiva: vista a vista, sin romper lo que funciona. La rama `vanilla` queda congelada como referencia.
 **Razonamiento:** El proyecto crecerá como CMS y la complejidad futura (estado compartido, componentes reutilizables, routing declarativo) justifica el uso de un framework. Vue 3 se elige por su curva de aprendizaje gradual, su proximidad al HTML/CSS/JS vanilla que ya existe, y la calidad de su documentación oficial. Vite se elige como bundler por ser el estándar actual en proyectos Vue y por su velocidad de desarrollo.
-**Impacto:** La decisión D3 queda superada. La rama `feature/vue-migration` sale desde `development` y se mergeará cuando todas las vistas estén migradas y probadas.
+**Impacto:** La decisión D3 queda superada. La rama `feature/vue-migration` puede mergearse a `development` tras pruebas del flujo completo (las cuatro vistas ya están en Vue).
 
-### D12 — Migración híbrida: Vue en home, vanilla en el resto (sesión 2026-05-26)
-**Decisión:** Mantener un único `index.html` con los cuatro `<main class="page">`. Solo el interior de `#page-home` pasa a Vue; login, registro y forgot permanecen en HTML hasta siguientes sesiones. El router y `auth.js` siguen siendo globales vanilla.
-**Razonamiento:** Minimiza el riesgo de regresiones: `goTo()` y los mocks no se reescriben. Los estilos CSS actuales siguen aplicando porque el markup de `PageHome.vue` replica las mismas clases e IDs (`stat-users`, `home-btn-register`, etc.). Los CTAs del home usan delegación en `#page-home` porque Vue monta los botones después de `DOMContentLoaded`. Los cuatro CSS se importan en `main.js` para que dev y build compartan la misma entrada.
-**Impacto:** El desarrollo local del público pasa a `npm run dev` en `frontend-public/`. Abrir `index.html` con doble clic ya no basta (hace falta Vite para compilar Vue). `npm run build` genera `dist/` con el bundle Vue más copias de `js/` y `css/` vanilla.
+### D12 — Migración híbrida progresiva (sesión 2026-05-26) — COMPLETADA
+**Decisión:** Mantener un único `index.html` con los cuatro `<main class="page">` y migrar el interior de cada uno a Vue vista a vista.
+**Estado (2026-05-29):** Completada. `index.html` solo contiene nav, mount points y toaster. Router y auth MOCK siguen en JS vanilla.
 
-### D13 — Una instancia Vue por vista migrada (sesión 2026-05-27)
-**Decisión:** Cada `<main class="page">` migrado tiene su propio punto de montaje (`#app`, `#app-login`, …) y su propio `createApp()` en `main.js`, en lugar de un único `App.vue` con router interno.
-**Razonamiento:** Encaja con la migración progresiva: no introduce Vue Router hasta que las cuatro vistas estén en Vue. El router vanilla (`goTo`) y `auth.js` siguen operando sobre IDs del DOM; la delegación de eventos en el `<main>` padre evita depender del orden de montaje de Vue.
-**Impacto:** `#app-register` ya sigue este patrón; al migrar forgot se añadirá `#app-forgot`.
+### D13 — Una instancia Vue por vista (sesión 2026-05-27)
+**Decisión:** Cada `<main class="page">` tiene su `#app-*` y su `createApp()` en `main.js`, sin `App.vue` raíz ni Vue Router durante la migración.
+**Razonamiento:** `goTo()` y `auth.js` operan sobre IDs del DOM; la delegación en `#page-*` evita depender del orden de montaje de Vue.
+**Impacto:** Patrón aplicado en las cuatro vistas: `#app`, `#app-login`, `#app-register`, `#app-forgot`.
+
+### D14 — Frontend público: contenido 100 % Vue, lógica transitoria en JS (sesión 2026-05-29)
+**Decisión:** Tras migrar `PageForgot.vue`, todo el markup de usuario vive en `src/views/`. Se mantienen `router.js`, `auth.js`, `password.js` y `ui.js` como capa imperativa global hasta sustituir los bloques MOCK por `fetch`.
+**Razonamiento:** Separar la migración de UI (completada) de la integración API (pendiente). Reescribir auth de golpe habría mezclado dos riesgos. La delegación de eventos escala sin re-registrar listeners cuando Vue monta hijos.
+**Impacto:** `feature/vue-migration` lista para pruebas E2E manuales y merge. Siguiente hito natural: conectar backend o introducir Vue Router + composables de API.
 
 ---
 

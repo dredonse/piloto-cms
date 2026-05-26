@@ -7,6 +7,7 @@ import { createApp } from 'vue'
 import PageHome from './views/PageHome.vue'
 import PageLogin from './views/PageLogin.vue'
 import PageRegister from './views/PageRegister.vue'
+import PageForgot from './views/PageForgot.vue'
 
 const homeRoot = document.getElementById('app')
 if (homeRoot) {
@@ -21,4 +22,9 @@ if (loginRoot) {
 const registerRoot = document.getElementById('app-register')
 if (registerRoot) {
   createApp(PageRegister).mount(registerRoot)
+}
+
+const forgotRoot = document.getElementById('app-forgot')
+if (forgotRoot) {
+  createApp(PageForgot).mount(forgotRoot)
 }

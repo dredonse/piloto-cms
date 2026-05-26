@@ -473,37 +473,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── Recuperar contraseña ───────────────────────────────────
-  // Reset — mismo patrón que el registro
-  document.getElementById('new-pwd')
-      .addEventListener('blur', validateNewPwd);
+  // ── Recuperar contraseña (Vue monta el wizard tras DOMContentLoaded) ──
+  const pageForgot = document.getElementById('page-forgot');
+  if (pageForgot) {
+    pageForgot.addEventListener('focusout', (e) => {
+      if (e.target.id === 'forgot-email') validateForgotEmail();
+      if (e.target.id === 'new-pwd') validateNewPwd();
+    });
 
-  document.getElementById('confirm-pwd')
-      .addEventListener('input', validateConfirmPwd);
+    pageForgot.addEventListener('input', (e) => {
+      if (e.target.id === 'new-pwd') checkPwdReset(e.target.value);
+      if (e.target.id === 'confirm-pwd') validateConfirmPwd();
+    });
 
-  document.getElementById('back-to-login')
-      .addEventListener('click', () => goTo('login'));
+    pageForgot.addEventListener('click', (e) => {
+      const el = e.target.closest('#back-to-login, #btn-forgot-step2');
+      if (!el) return;
+      if (el.id === 'back-to-login') goTo('login');
+      if (el.id === 'btn-forgot-step2') simulateForgotStep2();
+    });
 
-  document.getElementById('forgot-form-step1')
-      .addEventListener('submit', (e) => {
+    pageForgot.addEventListener('submit', (e) => {
+      if (e.target.id === 'forgot-form-step1') {
         e.preventDefault();
         simulateForgotStep1();
-      });
-
-  document.getElementById('forgot-email')
-      .addEventListener('blur', validateForgotEmail);
-
-  document.getElementById('btn-forgot-step2')
-      .addEventListener('click', simulateForgotStep2);
-
-  document.getElementById('reset-form')
-      .addEventListener('submit', (e) => {
+      }
+      if (e.target.id === 'reset-form') {
         e.preventDefault();
         simulateReset();
-      });
-
-  // Indicador de seguridad en el reset (antes era oninput en el HTML)
-  document.getElementById('new-pwd')
-      .addEventListener('input', (e) => checkPwdReset(e.target.value));
+      }
+    });
+  }
 
 });
