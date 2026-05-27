@@ -4,27 +4,7 @@ import '../css/components.css'
 import '../css/pages.css'
 
 import { createApp } from 'vue'
-import PageHome from './views/PageHome.vue'
-import PageLogin from './views/PageLogin.vue'
-import PageRegister from './views/PageRegister.vue'
-import PageForgot from './views/PageForgot.vue'
+import App from './App.vue'
+import router from './router'
 
-const homeRoot = document.getElementById('app')
-if (homeRoot) {
-  createApp(PageHome).mount(homeRoot)
-}
-
-const loginRoot = document.getElementById('app-login')
-if (loginRoot) {
-  createApp(PageLogin).mount(loginRoot)
-}
-
-const registerRoot = document.getElementById('app-register')
-if (registerRoot) {
-  createApp(PageRegister).mount(registerRoot)
-}
-
-const forgotRoot = document.getElementById('app-forgot')
-if (forgotRoot) {
-  createApp(PageForgot).mount(forgotRoot)
-}
+createApp(App).use(router).mount('#app')

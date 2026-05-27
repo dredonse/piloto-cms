@@ -1,3 +1,19 @@
+<script setup>
+import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
+
+const router = useRouter()
+const { state } = useAuth()
+
+function goToLogin() {
+  router.push({ name: 'login' })
+}
+
+function goToRegister() {
+  router.push({ name: 'register' })
+}
+</script>
+
 <template>
   <div style="display:flex; flex-direction:column; align-items:center; width:100%; padding:80px 2rem 60px;">
 
@@ -14,13 +30,13 @@
 
     <div class="stat-inline">
       <span class="stat-dot"></span>
-      <span class="stat-inline-num" id="stat-users">247</span>
+      <span class="stat-inline-num" id="stat-users">{{ state.statsUsers }}</span>
       <span class="stat-inline-label">usuarios registrados</span>
     </div>
 
     <div class="home-actions">
-      <button type="button" class="btn-primary" id="home-btn-register">Crear cuenta gratuita</button>
-      <button type="button" class="btn-secondary" id="home-btn-login">Iniciar sesión →</button>
+      <button type="button" class="btn-primary" id="home-btn-register" @click="goToRegister">Crear cuenta gratuita</button>
+      <button type="button" class="btn-secondary" id="home-btn-login" @click="goToLogin">Iniciar sesion →</button>
     </div>
 
     <div class="features-grid">

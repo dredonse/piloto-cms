@@ -8,9 +8,9 @@ Aplicación web dockerizada en entorno LAMP que gestiona usuarios con distintos 
 
 ## Alcance funcional
 
-### Frontend público (Vue 3 + Vite)
+### Frontend público (Vue 3 + Vite + Vue Router)
 
-Accesible sin login. Las cuatro vistas de la SPA (`home`, `login`, `register`, `forgot`) están en **Vue 3**. El `index.html` es solo shell (nav + contenedores de montaje). La lógica MOCK y el routing siguen en `js/auth.js` y `js/router.js` hasta conectar el backend. Rama de referencia histórica: `vanilla`.
+Accesible sin login. Las cuatro vistas (`home`, `login`, `register`, `forgot`) están en Vue y se navegan con **Vue Router**. El `index.html` es shell mínimo (`#app`). La lógica MOCK se mantiene, pero ahora organizada en composables (`useAuth`, `usePassword`, `useToast`). Rama de referencia histórica: `vanilla`.
 
 Funcionalidades:
 
@@ -79,12 +79,19 @@ piloto-cms/
 │       ├── Services/               ← AuthService, GoogleIdTokenVerifier
 │       ├── Repositories/           ← UserRepository, SessionRepository, PasswordResetRepository
 │       └── Middleware/             ← AuthGuard (protege rutas por token y rol)
-├── frontend-public/      ← SPA pública 100 % Vue (contenido) + JS vanilla (router, auth MOCK)
-│   ├── index.html                  ← Shell Vite: nav, 4 `<main class="page">`, `#app*`, toaster
-│   ├── package.json                ← Vue 3, Vite, @vitejs/plugin-vue
+├── frontend-public/      ← SPA pública Vue 3 + Vue Router + composables (MOCK)
+│   ├── index.html                  ← Shell Vite mínimo con `#app`
+│   ├── package.json                ← Vue 3, Vue Router, Vite, @vitejs/plugin-vue
 │   ├── vite.config.js
 │   ├── src/
-│   │   ├── main.js                 ← Cuatro `createApp()` (`#app`, `#app-login`, `#app-register`, `#app-forgot`)
+│   │   ├── main.js                 ← `createApp(App).use(router)`
+│   │   ├── App.vue                 ← Nav global + `<router-view>` + toaster reactivo
+│   │   ├── router/
+│   │   │   └── index.js            ← Rutas `home/login/register/forgot`
+│   │   ├── composables/
+│   │   │   ├── useAuth.js          ← Mocks, validaciones y estado auth
+│   │   │   ├── usePassword.js      ← checkPwd() + validatePassword()
+│   │   │   └── useToast.js         ← toast reactivo global
 │   │   └── views/
 │   │       ├── PageHome.vue
 │   │       ├── PageLogin.vue
@@ -95,11 +102,6 @@ piloto-cms/
 │   │   ├── layout.css
 │   │   ├── components.css
 │   │   └── pages.css
-│   └── js/                         ← Router y auth vanilla (MOCK sin backend)
-│       ├── ui.js
-│       ├── router.js
-│       ├── password.js
-│       └── auth.js
 ├── frontend-private/               ← Dashboard privado (pendiente de refactorizar)
 │   └── index.html                  ← HTML + CSS + JS inline (monolito, funcional como prototipo)
 ├── design-system/                  ← Tokens y componentes CSS compartidos entre frontends
@@ -249,7 +251,7 @@ Rol:        admin
 
 ---
 
-## Estado del proyecto (actualizado: 2026-05-29)
+## Estado del proyecto (actualizado: 2026-05-27)
 
 ### Repositorio
 `https://github.com/dredonse/piloto-cms`
@@ -264,11 +266,12 @@ Rol:        admin
 `feature/vue-migration`
 
 ### Arquitectura frontend-public
-- **Migración Vue completada:** las cuatro vistas renderizan en componentes `.vue`; no queda markup de formularios en `index.html`
-- Routing: `router.js::goTo()` alterna `.page.active` sobre los cuatro `<main>` (sin Vue Router por ahora)
-- CSS en `css/*.css` importado desde `main.js`
-- Dev: **Vite** (`cd frontend-public && npm run dev`)
-- Comportamiento: listeners delegados en cada `#page-*` dentro de `auth.js`; funciones `simulate*` y validación sin cambios
+- **Migración de lógica completada:** Vue Router + composables (`useAuth`, `usePassword`, `useToast`)
+- Rutas: `/`, `/login`, `/register`, `/forgot`
+- Estado y validación: centralizados en `useAuth` con `setFieldError()` y funciones `simulate*()` (MOCK)
+- Medidor de contraseña: `usePassword::checkPwd()` en register y reset
+- Toaster: reactivo en `useToast` + render en `App.vue`
+- Dev: **Vite** (`cd frontend-public && npm install && npm run dev`)
 - Modo MOCK activo (sin conexión al backend)
 
 ### Estado del frontend-private
@@ -398,7 +401,7 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 
 ---
 
-## Trabajo completado en sesión 2026-05-27
+## Trabajo completado en sesión 2026-05-27 (refactor composables)
 
 ### Paso 2 — Migración de `page-login` a Vue
 
@@ -470,10 +473,40 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 
 ---
 
+## Trabajo completado en sesión 2026-05-27
+
+### Paso 5 — Refactor de JS vanilla a Vue Router + composables
+
+**Objetivo:** Sustituir `router.js`, `ui.js`, `password.js`, `auth.js` por arquitectura Vue nativa, manteniendo los mocks y sin tocar backend.
+
+| Archivo | Cambio |
+|---------|--------|
+| `frontend-public/package.json` | Añadido `vue-router`. |
+| `frontend-public/src/router/index.js` | Nuevas rutas: `/`, `/login`, `/register`, `/forgot`. |
+| `frontend-public/src/main.js` | Un único `createApp(App).use(router)`. |
+| `frontend-public/src/App.vue` | Nav global, `<router-view>`, wrapper `.page/.form-page` y toaster reactivo. |
+| `frontend-public/src/composables/useToast.js` | Reemplaza `ui.js`: `toast()` reactivo con autocierre. |
+| `frontend-public/src/composables/usePassword.js` | Reemplaza `password.js`: `checkPwd()` y `validatePassword()`. |
+| `frontend-public/src/composables/useAuth.js` | Reemplaza `auth.js`: validaciones por campo, `simulate*()`, estado de login/register/forgot, reset UI por navegación. |
+| `frontend-public/src/views/*.vue` | Home/Login/Register/Forgot conectadas a composables y `router.push()`. |
+| `frontend-public/index.html` | Shell mínimo con solo `#app` y script módulo Vite. |
+| `frontend-public/js/*` | Eliminados (`router.js`, `ui.js`, `password.js`, `auth.js`). |
+| `frontend-public/vite.config.js` | Simplificado: sin plugin de copia de assets vanilla. |
+
+**Riesgos detectados y mitigación:**
+- `goTo()` hacía `resetForms()` implícito al navegar.  
+  → Mitigado con `resetUiState()` en `useAuth`, disparado en cada cambio de ruta desde `App.vue`.
+- Dependencia fuerte de IDs históricos en validación por campo.  
+  → Se conservaron los IDs clave en inputs/errores/botones para compatibilidad y trazabilidad.
+
+**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`.
+
+---
+
 ## Próximos pasos pendientes
 
+- [ ] Ejecutar `npm install` en `frontend-public/` (nuevo `vue-router`) y correr smoke tests manuales
 - [ ] Probar flujo completo en `feature/vue-migration` y merge a `development`
-- [ ] Valorar **Vue Router** para sustituir `goTo()` cuando se conecte el backend
 - [ ] Conectar `frontend-public` al backend real (sustituir bloques MOCK por fetch)
   - [ ] `simulateLogin()` → `POST /api/auth/login`
   - [ ] `simulateRegister()` → `POST /api/auth/register`
@@ -537,17 +570,22 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 
 ### D12 — Migración híbrida progresiva (sesión 2026-05-26) — COMPLETADA
 **Decisión:** Mantener un único `index.html` con los cuatro `<main class="page">` y migrar el interior de cada uno a Vue vista a vista.
-**Estado (2026-05-29):** Completada. `index.html` solo contiene nav, mount points y toaster. Router y auth MOCK siguen en JS vanilla.
+**Estado (2026-05-29):** Completada. `index.html` pasó a shell mínimo `#app` y toda la UI vive en componentes Vue.
 
 ### D13 — Una instancia Vue por vista (sesión 2026-05-27)
 **Decisión:** Cada `<main class="page">` tiene su `#app-*` y su `createApp()` en `main.js`, sin `App.vue` raíz ni Vue Router durante la migración.
 **Razonamiento:** `goTo()` y `auth.js` operan sobre IDs del DOM; la delegación en `#page-*` evita depender del orden de montaje de Vue.
-**Impacto:** Patrón aplicado en las cuatro vistas: `#app`, `#app-login`, `#app-register`, `#app-forgot`.
+**Impacto:** Patrón usado para migrar sin romper. Queda reemplazado en sesión 2026-05-27 por `App.vue` + `router-view`.
 
 ### D14 — Frontend público: contenido 100 % Vue, lógica transitoria en JS (sesión 2026-05-29)
 **Decisión:** Tras migrar `PageForgot.vue`, todo el markup de usuario vive en `src/views/`. Se mantienen `router.js`, `auth.js`, `password.js` y `ui.js` como capa imperativa global hasta sustituir los bloques MOCK por `fetch`.
 **Razonamiento:** Separar la migración de UI (completada) de la integración API (pendiente). Reescribir auth de golpe habría mezclado dos riesgos. La delegación de eventos escala sin re-registrar listeners cuando Vue monta hijos.
-**Impacto:** `feature/vue-migration` lista para pruebas E2E manuales y merge. Siguiente hito natural: conectar backend o introducir Vue Router + composables de API.
+**Impacto:** Decisión cerrada en sesión 2026-05-27. La capa transitoria JS se eliminó y pasó a composables.
+
+### D15 — Arquitectura final de frontend público: Router + composables (sesión 2026-05-27)
+**Decisión:** Adoptar `vue-router` y centralizar lógica en composables: `useAuth`, `usePassword`, `useToast`.
+**Razonamiento:** Eliminar deuda de scripts globales, mejorar testabilidad, y preparar la integración con backend sin acoplar lógica al DOM.
+**Impacto:** Eliminados `frontend-public/js/{router,auth,password,ui}.js`; navegación con `router.push`; estado de formularios, validaciones y mocks controlados desde composables.
 
 ---
 
