@@ -70,7 +70,7 @@ Aplicación dockerizada con Apache + PHP y MySQL. Permite despliegue sencillo y 
 
 ```
 piloto-cms/
-├── backend/      ← API REST en PHP (MVC propio, sin 													frameworks externos)
+├── backend/      ← API REST en PHP (MVC propio, sin 			frameworks externos)
 │   ├── public/index.php            ← Punto de entrada, registra todas las rutas
 │   ├── config/bootstrap.php        ← Autoloader de clases
 │   └── src/
