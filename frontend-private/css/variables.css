@@ -1,0 +1,17 @@
+:root {
+  --sidebar-bg: #141311;
+  --sidebar-w: 220px;
+  --bg: #f4f2ee;
+  --surface: #ffffff;
+  --border: #e0ddd6;
+  --text: #1a1916;
+  --muted: #7a7870;
+  --accent: #c9540a;
+  --accent-dk: #9b3d06;
+  --accent-lt: #fdf0e8;
+  --success: #1a6b3c;
+  --success-lt: #e8f5ee;
+  --error: #b91c1c;
+  --error-lt: #fef2f2;
+  --input-bg: #fafaf8;
+}
