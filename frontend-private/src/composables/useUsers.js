@@ -56,7 +56,7 @@ function initials(name) {
 
 function openCreateModal() {
   state.modalMode = 'create'
-  state.form = { id: null, name: '', surname: '', email: '', role: 'user', password: 'temp123' }
+  state.form = { id: null, name: '', surname: '', email: '', role: 'user', password: '' }
   state.modalOpen = true
 }
 
@@ -81,6 +81,18 @@ function closeModal() {
 async function saveUser() {
   if (!state.form.name || !state.form.email) {
     toast('Completa los campos obligatorios')
+    return
+  }
+
+  // Misma regla que la API: al crear, la contraseña es obligatoria (mínimo 8);
+  // al editar, vacía significa "no cambiarla".
+  const pwd = state.form.password
+  if (state.modalMode === 'create' && !pwd) {
+    toast('Define una contraseña para el nuevo usuario')
+    return
+  }
+  if (pwd && pwd.length < 8) {
+    toast('La contraseña debe tener al menos 8 caracteres')
     return
   }
 
