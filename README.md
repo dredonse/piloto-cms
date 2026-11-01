@@ -22,9 +22,9 @@ Funcionalidades:
 
 ---
 
-### Frontend privado (HTML, CSS, JS vanilla)
+### Frontend privado (Vue 3 + Vite + Vue Router)
 
-Accesible tras autenticación. El contenido se adapta según el tipo de usuario.
+Accesible tras autenticación. El contenido se adapta según el tipo de usuario con guards de token y rol.
 
 #### Administrador
 
@@ -66,6 +66,32 @@ Aplicación dockerizada con Apache + PHP y MySQL. Permite despliegue sencillo y 
 
 ---
 
+## Levantar proyecto
+
+**Terminal 1 — Backend:**
+
+```bash
+cd /Users/dada/Developer/piloto-cms
+docker compose up
+```
+
+**Terminal 2 — Frontend private:**
+
+```bash
+cd /Users/dada/Developer/piloto-cms/frontend-private
+npm install
+npm run dev -- --port 5175
+```
+
+**Terminal 3 — Frontend public:**
+
+```bash
+cd /Users/dada/Developer/piloto-cms/frontend-public
+npm run dev -- --port 5174
+```
+
+---
+
 ## Estructura del repositorio
 
 ```
@@ -102,8 +128,26 @@ piloto-cms/
 │   │   ├── layout.css
 │   │   ├── components.css
 │   │   └── pages.css
-├── frontend-private/               ← Dashboard privado (pendiente de refactorizar)
-│   └── index.html                  ← HTML + CSS + JS inline (monolito, funcional como prototipo)
+├── frontend-private/               ← SPA privada Vue 3 + Vue Router + composables (MOCK)
+│   ├── index.html                  ← Shell mínimo (`#app`)
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── css/
+│   │   ├── variables.css
+│   │   ├── layout.css
+│   │   ├── components.css
+│   │   └── pages.css
+│   └── src/
+│       ├── main.js
+│       ├── App.vue
+│       ├── router/index.js         ← guards token/rol
+│       ├── composables/
+│       │   ├── useAuth.js
+│       │   ├── useUsers.js
+│       │   └── useToast.js
+│       └── views/
+│           ├── AdminView.vue
+│           └── UserView.vue
 ├── design-system/                  ← Tokens y componentes CSS compartidos entre frontends
 │   └── css/
 │       ├── tokens.css
@@ -251,7 +295,7 @@ Rol:        admin
 
 ---
 
-## Estado del proyecto (actualizado: 2026-05-27)
+## Estado del proyecto (actualizado: 2026-05-27 · tarde)
 
 ### Repositorio
 `https://github.com/dredonse/piloto-cms`
@@ -275,9 +319,12 @@ Rol:        admin
 - Modo MOCK activo (sin conexión al backend)
 
 ### Estado del frontend-private
-- Archivo único monolítico: HTML + CSS inline + JS inline
-- Funcional como prototipo: rol-switcher (admin/user), tabla de usuarios, modal CRUD, mini-chart
-- Aún usa `onclick` inline en el HTML (pendiente de refactorizar igual que public)
+- Migrado a Vue 3 + Vite + Vue Router (mismo patrón del frontend-public)
+- CSS separado en 4 capas: `variables.css`, `layout.css`, `components.css`, `pages.css`
+- Vistas: `AdminView` (dashboard + tabla + modal CRUD + stats) y `UserView` (perfil + cambio de contraseña)
+- Composables: `useAuth` (sesión + logout), `useUsers` (CRUD MOCK), `useToast`
+- Guards de rutas: sin token en `sessionStorage` redirige a `/frontend-public/`
+- Guards de rol: `user` no accede a ruta admin y viceversa
 
 ### Estado del backend
 - 100% funcional: autenticación completa, roles, CRUD usuarios, tokens de sesión con hash, recuperación de contraseña, Google OAuth
@@ -503,10 +550,79 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 
 ---
 
+## Trabajo completado en sesión 2026-05-27 (frontend-private Vue)
+
+### Paso 6 — Refactor completo de `frontend-private` al patrón Vue
+
+**Objetivo:** Migrar el monolito privado (HTML + CSS + JS inline) al mismo patrón arquitectónico del frontend público.
+
+| Archivo | Cambio |
+|---------|--------|
+| `frontend-private/index.html` | Reemplazado por shell mínimo con `#app`. |
+| `frontend-private/package.json` | Nuevo proyecto Vite con `vue` y `vue-router`. |
+| `frontend-private/vite.config.js` | Configuración base Vite para entorno privado (puerto 5174). |
+| `frontend-private/css/*.css` | Separación del CSS inline en 4 capas (`variables/layout/components/pages`). |
+| `frontend-private/src/main.js` | Entrada única de app con router. |
+| `frontend-private/src/App.vue` | Layout global (sidebar, topbar, toaster, role switcher de prototipo). |
+| `frontend-private/src/views/AdminView.vue` | Dashboard admin + tabla de usuarios + CRUD en modal + métricas. |
+| `frontend-private/src/views/UserView.vue` | Perfil de usuario + cambio de contraseña. |
+| `frontend-private/src/composables/useAuth.js` | Estado de sesión, logout, cambio de contraseña y mock role switch. |
+| `frontend-private/src/composables/useUsers.js` | CRUD de usuarios y filtros con bloques `// --- MOCK ---`. |
+| `frontend-private/src/composables/useToast.js` | Toaster reactivo (mismo patrón que público). |
+| `frontend-private/src/router/index.js` | Rutas y guards: token + rol. |
+| `frontend-private/js/*` | Eliminados al dejar de usar JS inline/global. |
+
+**Guards implementados:**
+- Sin `sessionStorage.token` → redirección a `PUBLIC_APP_URL` (configurable por entorno, fallback `http://localhost:5174`).
+- Si rol es `user`, no entra a `/admin` (y viceversa).
+
+**Notas de mocks:**
+- Todas las operaciones de datos (`saveUser`, `confirmDelete`, `changePassword`, cambios de sesión) están marcadas con `// --- MOCK ---` para reemplazo posterior por `fetch`.
+
+**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-public/`.
+
+---
+
+## Fixes aplicados en sesión 2026-05-27 (frontend-private)
+
+### Fix 1 — Token hardcodeado en sessionStorage
+**Problema:** El guard no redirigía porque `useAuth.js` tenía una función `syncSessionStorage()` que escribía un token mock en sessionStorage al arrancar.
+**Solución:** Eliminada `syncSessionStorage()` y cualquier `sessionStorage.setItem` del código del private. El private solo lee y borra sesión, nunca la crea.
+
+### Fix 2 — Redirección a ruta relativa en el guard
+**Problema:** El guard redirigía a `/frontend-public/` como ruta relativa, que no existe en el servidor de Vite del private.
+**Solución:** Añadido `frontend-private/src/config/env.js` con `PUBLIC_APP_URL` que lee `VITE_PUBLIC_APP_URL` del `.env` con fallback a `http://localhost:5174`. Guard y logout usan esta variable.
+
+**Ficheros modificados:**
+
+| Archivo | Cambio |
+|---------|--------|
+| `frontend-private/src/config/env.js` | Nuevo. Expone `PUBLIC_APP_URL` e `IS_DEVELOPMENT`. |
+| `frontend-private/src/router/index.js` | Guard usa `PUBLIC_APP_URL` en lugar de ruta relativa. |
+| `frontend-private/src/composables/useAuth.js` | Logout usa `PUBLIC_APP_URL` para consistencia. |
+| `frontend-private/.env.example` | Añadidas `VITE_PUBLIC_APP_URL` y `VITE_APP_ENV`. |
+| `frontend-private/.env` | Crear localmente (no en git): `VITE_APP_ENV=development`, `VITE_PUBLIC_APP_URL=http://localhost:5174`. |
+
+### Fix 3 — Ruta /dev-login para pruebas en desarrollo
+**Problema:** Imposible probar el private en desarrollo porque sessionStorage no se comparte entre puertos distintos y el guard redirige antes de poder escribir el token.
+**Solución:** Ruta `/dev-login` con `DevLoginView.vue` que permite entrar como admin o user con un clic. Solo existe cuando `VITE_APP_ENV=development`. Botón "Cambiar rol (dev)" visible en el sidebar durante desarrollo.
+
+**Ficheros modificados:**
+
+| Archivo | Cambio |
+|---------|--------|
+| `frontend-private/src/views/DevLoginView.vue` | Nuevo. Botones admin/user, limpia sessionStorage antes de escribir nuevo rol. |
+| `frontend-private/src/App.vue` | Botón "Cambiar rol (dev)" en sidebar, visible solo en `IS_DEVELOPMENT`. |
+| `frontend-private/src/router/index.js` | Ruta `/dev-login` registrada solo si `IS_DEVELOPMENT`. |
+
+---
+
 ## Próximos pasos pendientes
 
-- [ ] Ejecutar `npm install` en `frontend-public/` (nuevo `vue-router`) y correr smoke tests manuales
-- [ ] Probar flujo completo en `feature/vue-migration` y merge a `development`
+- [x] Migración completa de `frontend-public` a Vue 3 + Vite + Vue Router + composables
+- [x] Merge de `feature/vue-migration` a `development`
+- [x] Migración completa de `frontend-private` a Vue 3 + Vite + Vue Router + composables
+- [ ] PR de `feature/private-vue` a `development`
 - [ ] Conectar `frontend-public` al backend real (sustituir bloques MOCK por fetch)
   - [ ] `simulateLogin()` → `POST /api/auth/login`
   - [ ] `simulateRegister()` → `POST /api/auth/register`
@@ -514,7 +630,7 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
   - [ ] `simulateReset()` → `POST /api/auth/reset-password`
   - [ ] `simulateGoogle()` → flujo OAuth real
   - [ ] Cargar contador real en home → `GET /api/stats/users-count`
-- [ ] Refactorizar `frontend-private`: sacar CSS e JS inline a ficheros propios
+- [ ] Ejecutar `npm install` en `frontend-private/` y correr smoke tests manuales (guards + CRUD + perfil)
 - [ ] Conectar `frontend-private` a la API (dashboard admin, perfil usuario)
 - [ ] Verificar responsive en móvil tras eliminar nav-tabs
 
@@ -586,6 +702,16 @@ Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben compo
 **Decisión:** Adoptar `vue-router` y centralizar lógica en composables: `useAuth`, `usePassword`, `useToast`.
 **Razonamiento:** Eliminar deuda de scripts globales, mejorar testabilidad, y preparar la integración con backend sin acoplar lógica al DOM.
 **Impacto:** Eliminados `frontend-public/js/{router,auth,password,ui}.js`; navegación con `router.push`; estado de formularios, validaciones y mocks controlados desde composables.
+
+### D16 — Frontend privado alineado al patrón Vue (sesión 2026-05-27)
+**Decisión:** Migrar `frontend-private` a Vue 3 + Vite + Vue Router y composables, replicando la arquitectura del frontend público.
+**Razonamiento:** Evitar mantener dos paradigmas distintos en el mismo repo (SPA moderna en público y monolito inline en privado), reducir deuda técnica y facilitar integración API posterior.
+**Impacto:** `frontend-private/index.html` deja de ser monolito; CSS se divide en 4 capas; lógica se mueve a `useAuth`, `useUsers`, `useToast`; se añaden guards de token y rol basados en `sessionStorage`.
+
+### D17 — Ruta /dev-login condicionada a entorno de desarrollo (sesión 2026-05-27)
+**Decisión:** Añadir una ruta `/dev-login` en `frontend-private` que solo existe cuando `VITE_APP_ENV=development`, permitiendo simular sesiones de admin o user sin depender del frontend-public.
+**Razonamiento:** sessionStorage no se comparte entre puertos distintos, lo que hace imposible probar el guard de token en desarrollo sin una puerta de entrada controlada. La condición por entorno garantiza que esta ruta no existe en producción.
+**Impacto:** `DevLoginView.vue` escribe token y rol en sessionStorage y redirige a `/admin` o `/user`. El sidebar muestra un botón "Cambiar rol (dev)" para alternar sin escribir URLs manualmente.
 
 ---
 
