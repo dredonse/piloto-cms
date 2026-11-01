@@ -10,6 +10,13 @@ services:
       - ./backend:/var/www/html
     env_file:
       - .env
+    environment:
+      # Database.php lee DB_*; aquí se mapean desde las variables MYSQL_* del .env
+      DB_HOST: ${MYSQL_HOST:-db}
+      DB_PORT: "3306"
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
     depends_on:
       - db
 

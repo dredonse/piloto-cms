@@ -1,94 +1,185 @@
-# piloto-cms — Sistema de gestión de usuarios con control de acceso
+# Piloto CMS
 
-## Objetivo
+Sistema de gestión de usuarios con control de acceso, pensado como base de un futuro CMS. **API REST en PHP 8.3 sin framework** (arquitectura en capas, autenticación por token, roles admin/user, login con Google y recuperación de contraseña), **MySQL** y **Docker**, con dos SPAs en **Vue 3 + Vite**: una zona pública y una zona privada.
 
-Aplicación web dockerizada en entorno LAMP que gestiona usuarios con distintos niveles de acceso: autenticación tradicional, login con Google y recuperación de contraseña. Base para un futuro CMS con arquitectura modular preparada para crecer.
-
----
-
-## Alcance funcional
-
-### Frontend público (Vue 3 + Vite + Vue Router)
-
-Accesible sin login. Las cuatro vistas (`home`, `login`, `register`, `forgot`) están en Vue y se navegan con **Vue Router**. El `index.html` es shell mínimo (`#app`). La lógica MOCK se mantiene, pero ahora organizada en composables (`useAuth`, `usePassword`, `useToast`). Rama de referencia histórica: `vanilla`.
-
-Funcionalidades:
-
-- Registro de usuarios
-- Inicio de sesión
-- Login con Google
-- Recuperación de contraseña
-- Visualización del número total de usuarios registrados
+> **Estado:** el backend está completo. Los dos frontends tienen la interfaz completa y funcionan contra datos simulados (*mocks*) que respetan el contrato de la API; conectarlos es el siguiente paso (ver *Próximos pasos* al final).
 
 ---
 
-### Frontend privado (Vue 3 + Vite + Vue Router)
+## Funcionalidades
 
-Accesible tras autenticación. El contenido se adapta según el tipo de usuario con guards de token y rol.
+**Zona pública** (sin login): registro, inicio de sesión, login con Google, recuperación de contraseña y contador de usuarios registrados.
 
-#### Administrador
+**Zona privada** (con login), según el rol:
 
-- Acceso a dashboard
-- Gestión de usuarios (crear, editar, eliminar)
-- Visualización del total de usuarios
-
-#### Usuario estándar
-
-- Acceso a su perfil
-- Cambio de contraseña
+- **Administrador:** dashboard, gestión de usuarios (crear, editar, eliminar) y métricas.
+- **Usuario:** perfil y cambio de contraseña.
 
 ---
 
 ## Arquitectura
 
-### Backend
-
-- PHP con framework propio
-- Estructura basada en MVC
-- Separación en controladores, servicios y acceso a datos
-- API REST interna
-
-### Control de acceso
-
-- Sistema de roles: `admin` / `user`
-- Middleware para autenticación y permisos
-
-### Frontend
-
-- Separación en `frontend-public` y `frontend-private`
-- Consumo de API REST
-
----
-
-## Infraestructura
-
-Aplicación dockerizada con Apache + PHP y MySQL. Permite despliegue sencillo y entorno reproducible.
-
----
-
-## Levantar proyecto
-
-**Terminal 1 — Backend:**
-
-```bash
-cd /Users/dada/Developer/piloto-cms
-docker compose up
+```mermaid
+flowchart LR
+    subgraph Navegador
+        PUB["frontend-public<br/>Vue 3 · :5173"]
+        PRIV["frontend-private<br/>Vue 3 · :5174"]
+    end
+    subgraph Docker
+        subgraph APP["app · Apache + PHP 8.3 · :8080"]
+            IDX["public/index.php<br/>front controller"] --> R[Router] --> C[Controllers]
+            C --> G[AuthGuard]
+            C --> S[Services] --> RP[Repositories]
+        end
+        DB[("db · MySQL 8")]
+    end
+    PUB -. "JSON (mocks por ahora)" .-> IDX
+    PRIV -. "JSON + Bearer token" .-> IDX
+    RP -->|PDO| DB
+    S -->|verifica id_token| GOOGLE[[Google]]
 ```
 
-**Terminal 2 — Frontend private:**
+- **Backend en capas, sin framework:** `Router` propio con rutas dinámicas, `Controllers` (HTTP), `Services` (reglas de negocio), `Repositories` (SQL con PDO y *prepared statements*) y un middleware `AuthGuard` para autenticación y roles. Inyección de dependencias manual en `public/index.php`.
+- **Frontends desacoplados:** dos SPAs independientes con Vue Router y *composables*; la privada protege sus rutas con guards de token y rol (solo experiencia de usuario: la seguridad real está en la API).
+
+### Stack y por qué
+
+| Pieza | Elección | Motivo |
+|---|---|---|
+| Backend | PHP 8.3 sin framework | Requisito del proyecto: implementar a mano router, middleware y capas para entenderlas |
+| Base de datos | MySQL 8 + PDO | Estándar LAMP; consultas preparadas sin dependencias |
+| Infraestructura | Docker Compose | Entorno reproducible con un comando |
+| Frontend | Vue 3 + Vite + Vue Router | Migrado desde JS vanilla: reactividad, componentes y routing para una app que crecerá |
+
+---
+
+## Puesta en marcha
+
+Requisitos: Docker y Node.js 18 o superior.
+
+### 1. Backend (API + MySQL)
 
 ```bash
-cd /Users/dada/Developer/piloto-cms/frontend-private
+cp .env.example .env          # y cambia las contraseñas
+docker compose up --build
+```
+
+La API queda en `http://localhost:8080`. Comprobación: `curl http://localhost:8080/api/health` → `{"status":"ok",...}`
+
+> MySQL crea la base de datos y el usuario solo la primera vez, con los valores del `.env`. Si cambias las credenciales después, recrea el volumen: `docker compose down -v`.
+
+### 2. Frontend público
+
+```bash
+cd frontend-public
 npm install
-npm run dev -- --port 5175
+npm run dev                   # http://localhost:5173
 ```
 
-**Terminal 3 — Frontend public:**
+### 3. Frontend privado
 
 ```bash
-cd /Users/dada/Developer/piloto-cms/frontend-public
-npm run dev -- --port 5174
+cd frontend-private
+cp .env.example .env
+npm install
+npm run dev                   # http://localhost:5174
 ```
+
+Mientras los frontends usan mocks, para entrar en la zona privada abre `http://localhost:5174/dev-login` y elige admin o usuario. Esa ruta solo existe con `VITE_APP_ENV=development`.
+
+### Credenciales de prueba (API)
+
+```
+Email:      admin@piloto.local
+Contraseña: PilotoAdmin1!
+```
+
+### Probar la API sin frontend
+
+```bash
+# Login → devuelve { user, token }
+curl -X POST http://localhost:8080/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"admin@piloto.local","password":"PilotoAdmin1!"}'
+
+# Endpoint protegido con el token obtenido
+curl http://localhost:8080/api/users -H "Authorization: Bearer <token>"
+```
+
+---
+
+## API
+
+Todas las respuestas son JSON. Los errores siguen el formato `{"message": "..."}` con el código HTTP adecuado.
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| GET | `/api/health` | Público | Estado de la API |
+| GET | `/api/stats/users-count` | Público | Total de usuarios |
+| POST | `/api/auth/register` | Público | Registro (devuelve usuario + token) |
+| POST | `/api/auth/login` | Público | Login (devuelve usuario + token) |
+| POST | `/api/auth/google` | Público | Login con un `id_token` de Google |
+| POST | `/api/auth/forgot-password` | Público | Solicita recuperación de contraseña |
+| POST | `/api/auth/reset-password` | Público | Completa la recuperación con el token |
+| GET | `/api/me` | Usuario | Datos del usuario en sesión |
+| PUT | `/api/me/password` | Usuario | Cambiar la contraseña propia |
+| GET | `/api/users` | Admin | Listar usuarios |
+| POST | `/api/users` | Admin | Crear usuario |
+| PUT | `/api/users/{id}` | Admin | Editar usuario |
+| DELETE | `/api/users/{id}` | Admin | Eliminar usuario |
+
+Los endpoints protegidos requieren la cabecera `Authorization: Bearer <token>`.
+
+---
+
+## Modelo de datos
+
+```mermaid
+erDiagram
+    users ||--o{ user_sessions : "tiene"
+    users {
+        BIGINT id PK
+        VARCHAR nombre
+        VARCHAR email UK
+        VARCHAR password_hash "bcrypt, NULL si solo Google"
+        VARCHAR google_id UK
+        ENUM rol "admin | user"
+    }
+    user_sessions {
+        BIGINT id PK
+        BIGINT user_id FK
+        CHAR64 token_hash "SHA-256 del token"
+        DATETIME expires_at
+    }
+    password_resets {
+        BIGINT id PK
+        VARCHAR email
+        VARCHAR token "SHA-256 del token"
+        DATETIME expires_at
+    }
+```
+
+---
+
+## Seguridad
+
+- **Contraseñas** con bcrypt (`password_hash` / `password_verify`).
+- **Tokens de sesión opacos:** 32 bytes aleatorios; al cliente se envía el token y en la base de datos solo se guarda su hash SHA-256. Caducan a los 7 días y se revocan al cambiar la contraseña o el rol.
+- **Roles verificados en el servidor** en cada petición (401 sin sesión válida, 403 sin permiso).
+- **Recuperación de contraseña:** token aleatorio hasheado, caducidad de 60 minutos, un solo uso y respuesta idéntica exista o no el email (evita la enumeración de usuarios).
+- **Google:** se verifican audiencia, emisor, caducidad y email verificado del `id_token` antes de emitir un token propio.
+- **SQL** siempre con consultas preparadas.
+- **Integridad:** no se puede eliminar ni degradar al último administrador.
+
+---
+
+## Decisiones técnicas
+
+Las más relevantes (el registro completo, con su razonamiento, está en [docs/DECISIONES.md](docs/DECISIONES.md)):
+
+- **Tokens opacos en base de datos en lugar de JWT:** permiten revocar sesiones al instante, a cambio de una consulta por petición, asumible en un monolito con una sola base de datos.
+- **Desarrollo *contract-first* con mocks:** se acordó el formato de la API y el frontend se construyó contra respuestas simuladas para avanzar en paralelo con el backend.
+- **Migración incremental de JS vanilla a Vue 3:** en una rama propia, una vista por commit y sin romper el funcionamiento en ningún paso; integrada mediante pull request. La versión vanilla se conserva en la rama `vanilla`.
 
 ---
 
@@ -96,638 +187,39 @@ npm run dev -- --port 5174
 
 ```
 piloto-cms/
-├── backend/      ← API REST en PHP (MVC propio, sin 			frameworks externos)
-│   ├── public/index.php            ← Punto de entrada, registra todas las rutas
-│   ├── config/bootstrap.php        ← Autoloader de clases
-│   └── src/
-│       ├── Core/    ← Router, Database, Request, Response, Cors
-│       ├── Controllers/            ← AuthController, UsersController, StatsController, HealthController
-│       ├── Services/               ← AuthService, GoogleIdTokenVerifier
-│       ├── Repositories/           ← UserRepository, SessionRepository, PasswordResetRepository
-│       └── Middleware/             ← AuthGuard (protege rutas por token y rol)
-├── frontend-public/      ← SPA pública Vue 3 + Vue Router + composables (MOCK)
-│   ├── index.html                  ← Shell Vite mínimo con `#app`
-│   ├── package.json                ← Vue 3, Vue Router, Vite, @vitejs/plugin-vue
-│   ├── vite.config.js
-│   ├── src/
-│   │   ├── main.js                 ← `createApp(App).use(router)`
-│   │   ├── App.vue                 ← Nav global + `<router-view>` + toaster reactivo
-│   │   ├── router/
-│   │   │   └── index.js            ← Rutas `home/login/register/forgot`
-│   │   ├── composables/
-│   │   │   ├── useAuth.js          ← Mocks, validaciones y estado auth
-│   │   │   ├── usePassword.js      ← checkPwd() + validatePassword()
-│   │   │   └── useToast.js         ← toast reactivo global
-│   │   └── views/
-│   │       ├── PageHome.vue
-│   │       ├── PageLogin.vue
-│   │       ├── PageRegister.vue
-│   │       └── PageForgot.vue      ← Wizard recuperación (3 pasos)
-│   ├── css/                        ← Sin cambios (mismas hojas que en vanilla)
-│   │   ├── variables.css
-│   │   ├── layout.css
-│   │   ├── components.css
-│   │   └── pages.css
-├── frontend-private/               ← SPA privada Vue 3 + Vue Router + composables (MOCK)
-│   ├── index.html                  ← Shell mínimo (`#app`)
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── css/
-│   │   ├── variables.css
-│   │   ├── layout.css
-│   │   ├── components.css
-│   │   └── pages.css
-│   └── src/
-│       ├── main.js
-│       ├── App.vue
-│       ├── router/index.js         ← guards token/rol
-│       ├── composables/
-│       │   ├── useAuth.js
-│       │   ├── useUsers.js
-│       │   └── useToast.js
-│       └── views/
-│           ├── AdminView.vue
-│           └── UserView.vue
-├── design-system/                  ← Tokens y componentes CSS compartidos entre frontends
-│   └── css/
-│       ├── tokens.css
-│       ├── base.css
-│       └── components.css
-├── docker/
-│   └── apache/
-│       ├── Dockerfile
-│       └── vhost.conf
-├── sql/
-│   ├── init.sql                    ← Tablas + seed de usuario admin
-│   └── migrations/
-│       └── 001_user_sessions.sql
-├── docker-compose.yml
-└── README.md                       ← Este archivo. Actualizar al final de cada sesión.
+├── backend/
+│   ├── public/            index.php (front controller) y .htaccess
+│   ├── config/            bootstrap.php (autoloader)
+│   └── src/               Core · Controllers · Services · Repositories · Middleware
+├── frontend-public/       SPA pública (Vue 3 + Vite)
+├── frontend-private/      SPA privada (Vue 3 + Vite)
+├── design-system/         Tokens y componentes CSS de la primera versión
+├── docker/apache/         Dockerfile y vhost
+├── sql/                   init.sql y migraciones
+├── docs/                  Decisiones técnicas y diario de desarrollo
+└── docker-compose.yml
 ```
 
----
+## Ramas
 
-## Modelo de datos
-
-### Tabla `users`
-`id` · `nombre` · `email` · `password` (hash bcrypt) · `google_id` · `rol` (admin/user) · `created_at`
-
-### Tabla `user_sessions`
-`id` · `user_id` · `token_hash` · `expires_at` · `created_at`
-> El token viaja en claro al cliente; en BD se guarda su hash SHA-256. TTL: 7 días.
-
-### Tabla `password_resets`
-`email` · `token` · `expires_at`
+- `main`: versión estable.
+- `development`: integración; las ramas `feature/*` y `fix/*` entran por pull request.
+- `vanilla`: referencia congelada del frontend en JavaScript sin framework (no se fusiona).
 
 ---
 
-## Autenticación
+## Próximos pasos
 
-- Login tradicional (email y contraseña)
-- Login con Google (verificación de Google ID token)
-- Recuperación de contraseña mediante token con expiración
-
----
-
-## API — Endpoints disponibles
-
-### Públicos (sin autenticación)
-
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| POST | `/api/auth/register` | Registrar usuario nuevo |
-| POST | `/api/auth/login` | Iniciar sesión |
-| POST | `/api/auth/google` | Login con Google |
-| POST | `/api/auth/forgot-password` | Solicitar recuperación de contraseña |
-| POST | `/api/auth/reset-password` | Completar recuperación con token |
-| GET  | `/api/stats/users-count` | Total de usuarios registrados |
-| GET  | `/api/health` | Estado de la API |
-
-### Autenticados (requieren `Authorization: Bearer <token>`)
-
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/me` | Datos del usuario en sesión |
-| PUT | `/api/me/password` | Cambiar contraseña propia |
-
-### Solo admin
-
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET    | `/api/users` | Listar todos los usuarios |
-| POST   | `/api/users` | Crear usuario |
-| PUT    | `/api/users/{id}` | Editar usuario |
-| DELETE | `/api/users/{id}` | Eliminar usuario |
+- [ ] Conectar los frontends a la API (sustituir los mocks por `fetch` con un cliente común).
+- [ ] Tests de la lógica principal (autenticación, middleware, reglas de administradores) e integración continua.
+- [ ] Endpoint de logout que invalide el token en el servidor.
+- [ ] Límite de intentos de login.
+- [ ] Manejador global de errores para responder siempre en JSON.
+- [ ] Envío real del email de recuperación de contraseña.
+- [ ] Verificación local del `id_token` de Google con sus claves públicas (JWKS).
 
 ---
 
-## Cómo levantar el proyecto
+## Desarrollo asistido por IA
 
-### 1. Backend (Docker)
-
-```bash
-cd piloto-cms
-docker compose up --build
-```
-
-Espera a ver `ready for connections` en los logs. La API queda en `http://localhost:8080`.
-
-Verificar que funciona:
-```
-http://localhost:8080/api/health   → { "status": "ok" }
-```
-
-### 2. Frontend público (Vite + Vue)
-
-En una nueva terminal:
-
-```bash
-cd frontend-public
-npm install
-npm run dev
-```
-
-Abrir `http://localhost:5173` (Vite abre el navegador por defecto).
-
-> Tras la migración a Vue, el público **requiere Vite** en desarrollo. La rama `vanilla` conserva la versión servible solo con HTTP estático.
-
-### 3. Frontend privado (servidor estático)
-
-Desde la raíz del proyecto:
-
-```bash
-python3 -m http.server 3000
-# o: npx serve . -p 3000
-```
-
-Abrir `http://localhost:3000/frontend-private/index.html`
-
-> No abrir los HTML con doble clic; los assets no cargarán correctamente.
-
-### Credenciales de prueba
-
-```
-Email:      admin@piloto.local
-Contraseña: PilotoAdmin1!
-Rol:        admin
-```
-
----
-
-## Escenario de demostración
-
-- Un usuario se registra desde el frontend público
-- El contador de usuarios se actualiza
-- Se inicia sesión y accede a la zona privada
-- Según su rol:
-  - usuario normal → acceso a su perfil y cambio de contraseña
-  - admin → acceso a gestión completa de usuarios
-- El administrador crea un nuevo usuario
-- Se prueba el login con Google
-- Se prueba la recuperación de contraseña
-
----
-
-# Registro de trabajo y contexto de sesión
-
-> Este documento se actualiza al final de cada bloque de trabajo.
-> Al inicio de cada sesión, leer este archivo para retomar el contexto exacto.
-
----
-
-## Estado del proyecto (actualizado: 2026-05-27 · tarde)
-
-### Repositorio
-`https://github.com/dredonse/piloto-cms`
-
-### Ramas
-- `main` — producción
-- `development` — integración, aquí mergean las features
-- `vanilla` — referencia congelada del frontend en Vanilla JS (nunca se mergea)
-- `feature/vue-migration` — migración progresiva del frontend a Vue 3 + Vite
-
-### Rama activa
-`feature/vue-migration`
-
-### Arquitectura frontend-public
-- **Migración de lógica completada:** Vue Router + composables (`useAuth`, `usePassword`, `useToast`)
-- Rutas: `/`, `/login`, `/register`, `/forgot`
-- Estado y validación: centralizados en `useAuth` con `setFieldError()` y funciones `simulate*()` (MOCK)
-- Medidor de contraseña: `usePassword::checkPwd()` en register y reset
-- Toaster: reactivo en `useToast` + render en `App.vue`
-- Dev: **Vite** (`cd frontend-public && npm install && npm run dev`)
-- Modo MOCK activo (sin conexión al backend)
-
-### Estado del frontend-private
-- Migrado a Vue 3 + Vite + Vue Router (mismo patrón del frontend-public)
-- CSS separado en 4 capas: `variables.css`, `layout.css`, `components.css`, `pages.css`
-- Vistas: `AdminView` (dashboard + tabla + modal CRUD + stats) y `UserView` (perfil + cambio de contraseña)
-- Composables: `useAuth` (sesión + logout), `useUsers` (CRUD MOCK), `useToast`
-- Guards de rutas: sin token en `sessionStorage` redirige a `/frontend-public/`
-- Guards de rol: `user` no accede a ruta admin y viceversa
-
-### Estado del backend
-- 100% funcional: autenticación completa, roles, CRUD usuarios, tokens de sesión con hash, recuperación de contraseña, Google OAuth
-- Dockerizado con Apache + PHP 8.3 + MySQL
-- Levantable con un único comando: `docker compose up --build`
-
----
-
-## Trabajo completado (sesiones anteriores)
-
-### Sesión anterior (antes de 2026-04-28)
-- Añadidos IDs a todos los elementos interactivos del HTML público
-- Eliminados todos los `onclick`/`oninput` inline del HTML
-- Creados listeners centralizados en `auth.js::DOMContentLoaded`
-- Añadidos `<form>` con `novalidate` para capturar Enter
-- Añadido campo de confirmación de contraseña en registro
-- Añadidos `<span class="field-error">` para errores inline por campo
-- Implementada validación por campo con `setFieldError()` y `validateXxx()` reutilizables
-- Añadido indicador visual de fortaleza de contraseña (barras + reglas)
-
----
-
-## Trabajo completado en sesión 2026-04-28
-
-### Simplificación UX del frontend público
-
-**Problema:** El botón Login/Registro aparecía en 3 lugares: nav-tabs (centro), nav-pills (derecha) y hero de home.
-
-**Cambios realizados:**
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-public/index.html` | Eliminado el `<div>` con los 4 nav-tabs (Inicio · Login · Registro · Recuperar). Nav pills renombrados: "Iniciar sesión" (ghost) y "Crear cuenta" (solid). |
-| `frontend-public/js/auth.js` | Eliminados listeners de tab-home/login/register/forgot. Corregido bug `email` no definido en `simulateRegister()`. Eliminada referencia `nav-count` inexistente. Eliminado código comentado muerto. |
-| `frontend-public/js/router.js` | Eliminado selector `.nav-tab` ya que no hay tabs en el DOM. |
-| `frontend-public/css/layout.css` | Eliminados estilos `.nav-tab`, `.nav-tab:hover`, `.nav-tab.active`. Eliminada regla responsive `.nav-tab { display:none }`. |
-
-**Resultado del nav:**
-```
-[Logo Piloto CMS]         [Iniciar sesión]  [Crear cuenta]
-                           (ghost pill)      (solid accent)
-```
-
----
-
-### Rediseño hero home — stats strip (sesión 2026-04-28)
-
-**Problema:** `stats-strip` era una card de 680px de ancho con un solo número — mucho contenedor, poco contenido.
-
-**Cambios realizados:**
-
-| Archivo | Cambio |
-|---------|--------|
-| `index.html` | Eliminada `stats-strip`. Añadido `.stat-inline` (dot + número + label) entre el subtítulo y los CTA buttons. El `id="stat-users"` se conserva para que `auth.js` siga actualizando el contador. |
-| `pages.css` | Eliminados `.stats-strip`, `.stat-item`, `.stat-num`, `.stat-label`. Añadidos `.stat-inline`, `.stat-dot`, `.stat-inline-num`, `@keyframes live-pulse`. Reducido `margin-bottom` de `.home-actions` de 80px → 60px. Reducido `margin-bottom` de `.home-subtitle` de 36px → 24px. Añadido hover accent en `.feature-card` (`border-top: 2px solid transparent → var(--accent)`). Limpiada responsive de stats. |
-
----
-
-## Trabajo completado en sesión 2026-05-10
-
-### Integración del backend en el repositorio
-
-**Contexto:** El proyecto existía en dos repositorios separados: uno con solo el frontend avanzado (`Piloto-CMS_frontend`) y otro con el proyecto completo generado por Cursor (`Piloto-CMS_completo`). Se decide crear un repo nuevo `piloto-cms` uniendo lo mejor de los dos.
-
-**Criterio de selección:**
-- Frontend: se usa `Piloto-CMS_frontend` porque tiene mejor arquitectura (CSS en 4 capas, JS por responsabilidad, validación por campo, mocks explícitos, sin onclick inline)
-- Backend: se usa `Piloto-CMS_completo` porque está 100% funcional y completo
-- Design system y Docker: de `Piloto-CMS_completo`
-
-**Cambios realizados:**
-- Creado repo nuevo `piloto-cms` con la estructura unificada
-- Copiado `frontend-public/` de `Piloto-CMS_frontend`
-- Copiado `frontend-private/` de `Piloto-CMS_frontend`
-- Copiado `backend/`, `design-system/`, `docker/`, `sql/`, `docker-compose.yml` de `Piloto-CMS_completo`
-- Actualizado README con contexto completo de ambos proyectos
-
-### Configuración del repositorio git (sesión 2026-05-10)
-
-**Cambios realizados:**
-
-| Archivo | Cambio |
-|---------|--------|
-| `.gitignore` | Creado. Excluye: `.env`, `Documentacion/`, `docker/data/`, `docker/mysql/`, `vendor/`, `node_modules/`, ficheros de sistema (`.DS_Store`, `Thumbs.db`), ficheros de editor (`.vscode/`, `.idea/`), logs. |
-| `.env.example` | Creado. Documenta las variables de entorno necesarias sin valores reales: `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_HOST`, `APP_ENV`, `GOOGLE_CLIENT_ID`. |
-
-**Git:**
-- Repo inicializado y subido a `https://github.com/dredonse/piloto-cms`
-- Rama `main` — commit inicial con toda la estructura
-- Rama `development` creada y publicada en remoto
-
----
-
-## Trabajo completado en sesión 2026-05-26
-
-### Paso 1 — Base Vue 3 + Vite y migración de `page-home`
-
-**Objetivo:** Montar la estructura del proyecto Vue sin romper login/registro/forgot ni conectar al backend.
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-public/package.json` | Nuevo. Dependencias: `vue`, `vite`, `@vitejs/plugin-vue`. Scripts: `dev`, `build`, `preview`. |
-| `frontend-public/vite.config.js` | Nuevo. Plugin Vue, `outDir: dist`, puerto dev 5173. |
-| `frontend-public/src/main.js` | Monta la app en `#app` dentro de `#page-home`. |
-| `frontend-public/src/App.vue` | Contenedor que renderiza `PageHome`. |
-| `frontend-public/src/views/PageHome.vue` | Contenido de la landing (hero, stat, CTAs, feature cards) migrado desde el HTML. |
-| `frontend-public/index.html` | `#page-home` solo contiene `<div id="app">`; añadido `<script type="module" src="/src/main.js">`. CSS importado desde `main.js` (mismos `css/*.css`). Vistas login/register/forgot intactas. |
-| `frontend-public/vite.config.js` | `base: './'` y plugin que copia `js/` y `css/` a `dist/` en el build. |
-| `frontend-public/js/auth.js` | CTAs del home: delegación de eventos en `#page-home` (los botones los crea Vue tras `DOMContentLoaded`). Mocks `simulate*` sin cambios. |
-
-**Cómo arrancar el frontend público en desarrollo:**
-
-```bash
-cd frontend-public
-npm install
-npm run dev
-```
-
-Abre `http://localhost:5173`. Navegación entre vistas y flujos MOCK deben comportarse igual que en `vanilla` para home + auth.
-
-**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`.
-
----
-
-## Trabajo completado en sesión 2026-05-27 (refactor composables)
-
-### Paso 2 — Migración de `page-login` a Vue
-
-**Objetivo:** Mover el formulario de login a `PageLogin.vue` sin reimplementar mocks ni validación; `auth.js` sigue siendo la fuente de verdad.
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-public/src/views/PageLogin.vue` | Nuevo. Formulario email/contraseña, Google, alertas, enlaces a forgot/register. Mismos IDs que el HTML vanilla. |
-| `frontend-public/src/main.js` | Segunda instancia `createApp(PageLogin)` en `#app-login`. Eliminado `App.vue` intermedio. |
-| `frontend-public/index.html` | `#page-login` solo contiene `<div id="app-login">`. |
-| `frontend-public/js/auth.js` | Login: delegación de `click` y `submit` en `#page-login` (formulario montado por Vue tras `DOMContentLoaded`). `simulateLogin()`, `validateLoginForm()` y `setFieldError()` sin cambios. |
-
-**Comportamiento conservado:**
-- Submit del formulario → `simulateLogin()` → `validateLoginForm()` → `setFieldError()` por campo
-- Google → `simulateGoogle()`
-- «¿Olvidaste tu contraseña?» → `goTo('forgot')`
-- «Regístrate aquí» → `goTo('register')`
-- `router.js::resetForms()` sigue reseteando `#login-btn` y `#login-error`
-
-**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`, mocks `simulate*`.
-
----
-
-## Trabajo completado en sesión 2026-05-28
-
-### Paso 3 — Migración de `page-register` a Vue
-
-**Objetivo:** Mover el formulario de registro (incl. estado de éxito) a `PageRegister.vue` sin reimplementar validación, medidor de contraseña ni mocks.
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-public/src/views/PageRegister.vue` | Nuevo. Formulario completo, medidor `pwd-strength`, checkbox términos, pantalla `reg-success`. Mismos IDs que el HTML vanilla. |
-| `frontend-public/src/main.js` | Tercera instancia `createApp(PageRegister)` en `#app-register`. |
-| `frontend-public/index.html` | `#page-register` solo contiene `<div id="app-register">`. |
-| `frontend-public/js/auth.js` | Registro: delegación en `#page-register` — `focusout` (validación blur), `input` (`checkPwd` / confirmación), `click` (Google, enlaces login, `err-go-login` dinámico), `submit` → `simulateRegister()`. |
-
-**Comportamiento conservado:**
-- Blur en nombre/email/contraseña → `validateReg*()` → `setFieldError()`
-- Input en `#reg-pwd` → `checkPwd()` (`password.js`)
-- Input en confirmación → `validateRegPwdConfirm()`
-- Submit → `simulateRegister()` (términos, email duplicado MOCK, éxito con `reg-success` y contador `stat-users`)
-- Enlaces a login y Google MOCK sin cambios
-
-**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`.
-
----
-
-## Trabajo completado en sesión 2026-05-29
-
-### Paso 4 — Migración de `page-forgot` a Vue (frontend público 100 % Vue)
-
-**Objetivo:** Completar la migración de la SPA pública. El wizard de recuperación tiene **3 pasos** en el código (email → confirmación de envío → nueva contraseña); el token MOCK se muestra en el paso 2 como enlace de ejemplo.
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-public/src/views/PageForgot.vue` | Nuevo. Tres pasos con IDs `forgot-step1`…`3`, formularios, `reset-form`, enlace volver al login. |
-| `frontend-public/src/main.js` | Cuarta instancia `createApp(PageForgot)` en `#app-forgot`. |
-| `frontend-public/index.html` | Eliminado ~100 líneas de HTML de formularios; solo shell + `#app-forgot`. Comentarios de prototipo limpiados. |
-| `frontend-public/js/auth.js` | Forgot: delegación en `#page-forgot` (`focusout`, `input`, `click`, `submit`). `simulateForgotStep1()`, `simulateForgotStep2()`, `simulateReset()` sin cambios. |
-
-**Comportamiento conservado:**
-- Paso 1 submit → `simulateForgotStep1()` + `validateForgotEmail()` / `setFieldError()`
-- Paso 2 → `simulateForgotStep2()` + temporizador `resend-timer`
-- Paso 3 → `validateNewPwd()` / `validateConfirmPwd()` en blur/input; submit → `simulateReset()`; `checkPwdReset()` en `#new-pwd` (las barras visuales `s1`–`s4` solo existen en registro — mismos IDs no duplicados en el DOM)
-- «Volver al login» → `goTo('login')`
-- `router.js::resetForms()` sigue reseteando los pasos del forgot
-
-**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`.
-
----
-
-## Trabajo completado en sesión 2026-05-27
-
-### Paso 5 — Refactor de JS vanilla a Vue Router + composables
-
-**Objetivo:** Sustituir `router.js`, `ui.js`, `password.js`, `auth.js` por arquitectura Vue nativa, manteniendo los mocks y sin tocar backend.
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-public/package.json` | Añadido `vue-router`. |
-| `frontend-public/src/router/index.js` | Nuevas rutas: `/`, `/login`, `/register`, `/forgot`. |
-| `frontend-public/src/main.js` | Un único `createApp(App).use(router)`. |
-| `frontend-public/src/App.vue` | Nav global, `<router-view>`, wrapper `.page/.form-page` y toaster reactivo. |
-| `frontend-public/src/composables/useToast.js` | Reemplaza `ui.js`: `toast()` reactivo con autocierre. |
-| `frontend-public/src/composables/usePassword.js` | Reemplaza `password.js`: `checkPwd()` y `validatePassword()`. |
-| `frontend-public/src/composables/useAuth.js` | Reemplaza `auth.js`: validaciones por campo, `simulate*()`, estado de login/register/forgot, reset UI por navegación. |
-| `frontend-public/src/views/*.vue` | Home/Login/Register/Forgot conectadas a composables y `router.push()`. |
-| `frontend-public/index.html` | Shell mínimo con solo `#app` y script módulo Vite. |
-| `frontend-public/js/*` | Eliminados (`router.js`, `ui.js`, `password.js`, `auth.js`). |
-| `frontend-public/vite.config.js` | Simplificado: sin plugin de copia de assets vanilla. |
-
-**Riesgos detectados y mitigación:**
-- `goTo()` hacía `resetForms()` implícito al navegar.  
-  → Mitigado con `resetUiState()` en `useAuth`, disparado en cada cambio de ruta desde `App.vue`.
-- Dependencia fuerte de IDs históricos en validación por campo.  
-  → Se conservaron los IDs clave en inputs/errores/botones para compatibilidad y trazabilidad.
-
-**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-private/`.
-
----
-
-## Trabajo completado en sesión 2026-05-27 (frontend-private Vue)
-
-### Paso 6 — Refactor completo de `frontend-private` al patrón Vue
-
-**Objetivo:** Migrar el monolito privado (HTML + CSS + JS inline) al mismo patrón arquitectónico del frontend público.
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-private/index.html` | Reemplazado por shell mínimo con `#app`. |
-| `frontend-private/package.json` | Nuevo proyecto Vite con `vue` y `vue-router`. |
-| `frontend-private/vite.config.js` | Configuración base Vite para entorno privado (puerto 5174). |
-| `frontend-private/css/*.css` | Separación del CSS inline en 4 capas (`variables/layout/components/pages`). |
-| `frontend-private/src/main.js` | Entrada única de app con router. |
-| `frontend-private/src/App.vue` | Layout global (sidebar, topbar, toaster, role switcher de prototipo). |
-| `frontend-private/src/views/AdminView.vue` | Dashboard admin + tabla de usuarios + CRUD en modal + métricas. |
-| `frontend-private/src/views/UserView.vue` | Perfil de usuario + cambio de contraseña. |
-| `frontend-private/src/composables/useAuth.js` | Estado de sesión, logout, cambio de contraseña y mock role switch. |
-| `frontend-private/src/composables/useUsers.js` | CRUD de usuarios y filtros con bloques `// --- MOCK ---`. |
-| `frontend-private/src/composables/useToast.js` | Toaster reactivo (mismo patrón que público). |
-| `frontend-private/src/router/index.js` | Rutas y guards: token + rol. |
-| `frontend-private/js/*` | Eliminados al dejar de usar JS inline/global. |
-
-**Guards implementados:**
-- Sin `sessionStorage.token` → redirección a `PUBLIC_APP_URL` (configurable por entorno, fallback `http://localhost:5174`).
-- Si rol es `user`, no entra a `/admin` (y viceversa).
-
-**Notas de mocks:**
-- Todas las operaciones de datos (`saveUser`, `confirmDelete`, `changePassword`, cambios de sesión) están marcadas con `// --- MOCK ---` para reemplazo posterior por `fetch`.
-
-**No tocado:** `backend/`, `sql/`, `docker/`, `frontend-public/`.
-
----
-
-## Fixes aplicados en sesión 2026-05-27 (frontend-private)
-
-### Fix 1 — Token hardcodeado en sessionStorage
-**Problema:** El guard no redirigía porque `useAuth.js` tenía una función `syncSessionStorage()` que escribía un token mock en sessionStorage al arrancar.
-**Solución:** Eliminada `syncSessionStorage()` y cualquier `sessionStorage.setItem` del código del private. El private solo lee y borra sesión, nunca la crea.
-
-### Fix 2 — Redirección a ruta relativa en el guard
-**Problema:** El guard redirigía a `/frontend-public/` como ruta relativa, que no existe en el servidor de Vite del private.
-**Solución:** Añadido `frontend-private/src/config/env.js` con `PUBLIC_APP_URL` que lee `VITE_PUBLIC_APP_URL` del `.env` con fallback a `http://localhost:5174`. Guard y logout usan esta variable.
-
-**Ficheros modificados:**
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-private/src/config/env.js` | Nuevo. Expone `PUBLIC_APP_URL` e `IS_DEVELOPMENT`. |
-| `frontend-private/src/router/index.js` | Guard usa `PUBLIC_APP_URL` en lugar de ruta relativa. |
-| `frontend-private/src/composables/useAuth.js` | Logout usa `PUBLIC_APP_URL` para consistencia. |
-| `frontend-private/.env.example` | Añadidas `VITE_PUBLIC_APP_URL` y `VITE_APP_ENV`. |
-| `frontend-private/.env` | Crear localmente (no en git): `VITE_APP_ENV=development`, `VITE_PUBLIC_APP_URL=http://localhost:5174`. |
-
-### Fix 3 — Ruta /dev-login para pruebas en desarrollo
-**Problema:** Imposible probar el private en desarrollo porque sessionStorage no se comparte entre puertos distintos y el guard redirige antes de poder escribir el token.
-**Solución:** Ruta `/dev-login` con `DevLoginView.vue` que permite entrar como admin o user con un clic. Solo existe cuando `VITE_APP_ENV=development`. Botón "Cambiar rol (dev)" visible en el sidebar durante desarrollo.
-
-**Ficheros modificados:**
-
-| Archivo | Cambio |
-|---------|--------|
-| `frontend-private/src/views/DevLoginView.vue` | Nuevo. Botones admin/user, limpia sessionStorage antes de escribir nuevo rol. |
-| `frontend-private/src/App.vue` | Botón "Cambiar rol (dev)" en sidebar, visible solo en `IS_DEVELOPMENT`. |
-| `frontend-private/src/router/index.js` | Ruta `/dev-login` registrada solo si `IS_DEVELOPMENT`. |
-
----
-
-## Próximos pasos pendientes
-
-- [x] Migración completa de `frontend-public` a Vue 3 + Vite + Vue Router + composables
-- [x] Merge de `feature/vue-migration` a `development`
-- [x] Migración completa de `frontend-private` a Vue 3 + Vite + Vue Router + composables
-- [ ] PR de `feature/private-vue` a `development`
-- [ ] Conectar `frontend-public` al backend real (sustituir bloques MOCK por fetch)
-  - [ ] `simulateLogin()` → `POST /api/auth/login`
-  - [ ] `simulateRegister()` → `POST /api/auth/register`
-  - [ ] `simulateForgotStep1()` → `POST /api/auth/forgot-password`
-  - [ ] `simulateReset()` → `POST /api/auth/reset-password`
-  - [ ] `simulateGoogle()` → flujo OAuth real
-  - [ ] Cargar contador real en home → `GET /api/stats/users-count`
-- [ ] Ejecutar `npm install` en `frontend-private/` y correr smoke tests manuales (guards + CRUD + perfil)
-- [ ] Conectar `frontend-private` a la API (dashboard admin, perfil usuario)
-- [ ] Verificar responsive en móvil tras eliminar nav-tabs
-
----
-
-## Decisiones tomadas
-
-### D1 — Scripts con `defer` en `<head>`
-**Decisión:** Los scripts se cargan con `defer` en `<head>` en lugar de al final del `<body>`.
-**Razonamiento:** `defer` garantiza el orden de ejecución y que el DOM esté disponible, sin bloquear el renderizado. Equivalente a colocarlos al final del body, pero más explícito.
-
-### D2 — Listeners centralizados en `DOMContentLoaded` (auth.js)
-**Decisión:** Todos los event listeners se registran en un único bloque `DOMContentLoaded` en `auth.js`, en lugar de `onclick`/`oninput` inline en el HTML.
-**Razonamiento:** Separación de responsabilidades (HTML = estructura, JS = comportamiento). Facilita el mantenimiento y evita la dispersión de lógica en el markup.
-
-### ~~D3 — Sin framework JS (vanilla)~~ — SUPERADA por D11
-**Decisión original:** Frontend público implementado en HTML + CSS + JS vanilla, sin Vue, React ni ningún framework.
-**Razonamiento original:** El proyecto es un CMS piloto de demostración. La complejidad actual no justifica añadir una capa de framework.
-**Estado:** Decisión superada en sesión 2026-05-26. Ver D11.
-
-### D4 — Modo MOCK explícito en auth.js
-**Decisión:** Las llamadas a la API están comentadas y marcadas con `// --- MOCK ---`. Las funciones `simulate*()` replican el comportamiento esperado con `delay()`.
-**Razonamiento:** Permite desarrollar y testear el frontend antes de que el backend esté disponible. La sustitución es quirúrgica: basta con reemplazar el bloque MOCK por un `fetch()` real.
-
-### D5 — Eliminar nav-tabs del frontend público (sesión 2026-04-28)
-**Decisión:** Se eliminan los nav-tabs del centro (Inicio | Login | Registro | Recuperar) del nav público. Se mantienen únicamente los dos nav-pills de la derecha y el logo.
-**Razonamiento:** Los tabs eran un artefacto de prototipo para navegar entre vistas durante el desarrollo. En un producto real, el usuario no necesita un tab "Recuperar" en la barra de navegación principal — esa vista solo se accede desde el link "¿Olvidaste tu contraseña?" dentro del login. Eliminarlos reduce la carga cognitiva y alinea la UI con el estilo minimalista del proyecto. Los listeners de los tabs se eliminan también de auth.js.
-
-### D6 — Hero home conserva sus dos CTAs (sesión 2026-04-28)
-**Decisión:** Los botones "Crear cuenta gratuita" y "Iniciar sesión →" del hero de home se mantienen.
-**Razonamiento:** No son redundantes con los nav-pills aunque apunten a la misma acción. Los nav-pills son persistentes y discretos (utilidad); los botones del hero son el CTA principal de la landing page (conversión). Esta es una práctica estándar en productos SaaS.
-
-### D7 — Stat de usuarios como elemento inline en el hero, no como card (sesión 2026-04-28)
-**Decisión:** El contador de usuarios registrados se muestra como una línea inline (dot animado + número + label) integrada en el hero, antes de los CTA buttons. Se elimina la `stats-strip` card.
-**Razonamiento:** La card estaba diseñada para múltiples métricas pero solo contenía una — mucho contenedor vacío. El elemento inline sigue el patrón de "social proof" habitual en productos SaaS (lineal, sin ruido visual), reduce el scroll total de la página y encaja mejor con el estilo minimalista. El dot verde pulsante refuerza la sensación de plataforma viva sin añadir complejidad.
-
-### D8 — Token de sesión hasheado en BD (sesión 2026-05-10)
-**Decisión:** El backend nunca guarda el token en claro en `user_sessions`, sino su hash SHA-256.
-**Razonamiento:** Si alguien obtiene acceso a la tabla, los tokens no sirven de nada. El token real solo viaja entre el servidor (en la respuesta de login) y el navegador (en sessionStorage). Cada petición envía el token en claro, el backend lo hashea y compara.
-
-### D9 — Repo unificado desde dos proyectos separados (sesión 2026-05-10)
-**Decisión:** Se crea un repo nuevo `piloto-cms` combinando el frontend de `Piloto-CMS_frontend` y el backend de `Piloto-CMS_completo`, en lugar de modificar cualquiera de los dos existentes.
-**Razonamiento:** El frontend avanzado tiene mejor arquitectura pero sin backend. El proyecto completo tiene backend funcional pero frontend básico. Unirlos en un repo limpio desde el principio evita deuda técnica y conflictos de historial git.
-
-### D10 — Documentacion/ ignorada en git pero conservada en local (sesión 2026-05-10)
-**Decisión:** La carpeta `Documentacion/` se añade al `.gitignore` y no se sube al repositorio remoto.
-**Razonamiento:** Contiene capturas de pantalla, PDFs y documentos de trabajo de sesiones anteriores que no aportan valor a quien clona el repo y engordan el historial git innecesariamente. Se conserva en local como material de estudio y referencia personal.
-
-### D11 — Migración del frontend a Vue 3 + Vite (sesión 2026-05-26)
-**Decisión:** Se migra el frontend-public de Vanilla JS a Vue 3 con Vite como bundler. La migración es progresiva: vista a vista, sin romper lo que funciona. La rama `vanilla` queda congelada como referencia.
-**Razonamiento:** El proyecto crecerá como CMS y la complejidad futura (estado compartido, componentes reutilizables, routing declarativo) justifica el uso de un framework. Vue 3 se elige por su curva de aprendizaje gradual, su proximidad al HTML/CSS/JS vanilla que ya existe, y la calidad de su documentación oficial. Vite se elige como bundler por ser el estándar actual en proyectos Vue y por su velocidad de desarrollo.
-**Impacto:** La decisión D3 queda superada. La rama `feature/vue-migration` puede mergearse a `development` tras pruebas del flujo completo (las cuatro vistas ya están en Vue).
-
-### D12 — Migración híbrida progresiva (sesión 2026-05-26) — COMPLETADA
-**Decisión:** Mantener un único `index.html` con los cuatro `<main class="page">` y migrar el interior de cada uno a Vue vista a vista.
-**Estado (2026-05-29):** Completada. `index.html` pasó a shell mínimo `#app` y toda la UI vive en componentes Vue.
-
-### D13 — Una instancia Vue por vista (sesión 2026-05-27)
-**Decisión:** Cada `<main class="page">` tiene su `#app-*` y su `createApp()` en `main.js`, sin `App.vue` raíz ni Vue Router durante la migración.
-**Razonamiento:** `goTo()` y `auth.js` operan sobre IDs del DOM; la delegación en `#page-*` evita depender del orden de montaje de Vue.
-**Impacto:** Patrón usado para migrar sin romper. Queda reemplazado en sesión 2026-05-27 por `App.vue` + `router-view`.
-
-### D14 — Frontend público: contenido 100 % Vue, lógica transitoria en JS (sesión 2026-05-29)
-**Decisión:** Tras migrar `PageForgot.vue`, todo el markup de usuario vive en `src/views/`. Se mantienen `router.js`, `auth.js`, `password.js` y `ui.js` como capa imperativa global hasta sustituir los bloques MOCK por `fetch`.
-**Razonamiento:** Separar la migración de UI (completada) de la integración API (pendiente). Reescribir auth de golpe habría mezclado dos riesgos. La delegación de eventos escala sin re-registrar listeners cuando Vue monta hijos.
-**Impacto:** Decisión cerrada en sesión 2026-05-27. La capa transitoria JS se eliminó y pasó a composables.
-
-### D15 — Arquitectura final de frontend público: Router + composables (sesión 2026-05-27)
-**Decisión:** Adoptar `vue-router` y centralizar lógica en composables: `useAuth`, `usePassword`, `useToast`.
-**Razonamiento:** Eliminar deuda de scripts globales, mejorar testabilidad, y preparar la integración con backend sin acoplar lógica al DOM.
-**Impacto:** Eliminados `frontend-public/js/{router,auth,password,ui}.js`; navegación con `router.push`; estado de formularios, validaciones y mocks controlados desde composables.
-
-### D16 — Frontend privado alineado al patrón Vue (sesión 2026-05-27)
-**Decisión:** Migrar `frontend-private` a Vue 3 + Vite + Vue Router y composables, replicando la arquitectura del frontend público.
-**Razonamiento:** Evitar mantener dos paradigmas distintos en el mismo repo (SPA moderna en público y monolito inline en privado), reducir deuda técnica y facilitar integración API posterior.
-**Impacto:** `frontend-private/index.html` deja de ser monolito; CSS se divide en 4 capas; lógica se mueve a `useAuth`, `useUsers`, `useToast`; se añaden guards de token y rol basados en `sessionStorage`.
-
-### D17 — Ruta /dev-login condicionada a entorno de desarrollo (sesión 2026-05-27)
-**Decisión:** Añadir una ruta `/dev-login` en `frontend-private` que solo existe cuando `VITE_APP_ENV=development`, permitiendo simular sesiones de admin o user sin depender del frontend-public.
-**Razonamiento:** sessionStorage no se comparte entre puertos distintos, lo que hace imposible probar el guard de token en desarrollo sin una puerta de entrada controlada. La condición por entorno garantiza que esta ruta no existe en producción.
-**Impacto:** `DevLoginView.vue` escribe token y rol en sessionStorage y redirige a `/admin` o `/user`. El sidebar muestra un botón "Cambiar rol (dev)" para alternar sin escribir URLs manualmente.
-
----
-
-## Cómo usar este README con Cursor
-
-Al inicio de cada sesión, el primer mensaje a Cursor es:
-
-```
-Lee el README.md. Es el contexto completo del proyecto.
-La tarea de hoy es: [descripción concreta de la tarea].
-No toques nada fuera del alcance de esa tarea.
-```
-
-Al terminar cada sesión, actualizar:
-- La fecha en "Estado del proyecto"
-- La rama activa si ha cambiado
-- El bloque "Trabajo completado" con la nueva sesión y el detalle de cada cambio por archivo
-- La lista de pendientes (marcar completados, añadir nuevos si aparecen)
-- Las decisiones tomadas si se tomó alguna nueva, con su razonamiento completo
+El proyecto se desarrolló con asistencia de IA (Cursor) como par de programación: la planificación, la arquitectura, la revisión del código y las decisiones son propias, y cada sesión quedó documentada en [docs/DIARIO.md](docs/DIARIO.md).

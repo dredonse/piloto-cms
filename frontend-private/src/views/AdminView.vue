@@ -141,6 +141,15 @@ const maxChart = computed(() => Math.max(...chartData.value))
           <div class="field"><label>Nombre</label><input v-model="state.form.name" type="text" /></div>
           <div class="field"><label>Apellidos</label><input v-model="state.form.surname" type="text" /></div>
           <div class="field"><label>Email</label><input v-model="state.form.email" type="email" /></div>
+          <div class="field">
+            <label>{{ state.modalMode === 'edit' ? 'Nueva contraseña (opcional)' : 'Contraseña' }}</label>
+            <input
+              v-model="state.form.password"
+              type="password"
+              autocomplete="new-password"
+              :placeholder="state.modalMode === 'edit' ? 'Déjala vacía para no cambiarla' : 'Mínimo 8 caracteres'"
+            />
+          </div>
           <div class="field"><label>Rol</label>
             <select v-model="state.form.role"><option value="user">Usuario</option><option value="admin">Admin</option></select>
           </div>
