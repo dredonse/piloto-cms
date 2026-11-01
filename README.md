@@ -1,22 +1,17 @@
 # Piloto CMS
 
-Sistema de gestión de usuarios con control de acceso, pensado como base de un futuro CMS.
-**API REST en PHP 8.3 sin framework** (arquitectura en capas, autenticación por token, roles admin/user,
-login con Google y recuperación de contraseña), **MySQL** y **Docker**, con dos SPAs en **Vue 3 + Vite**:
-una zona pública y una zona privada.
+Sistema de gestión de usuarios con control de acceso, pensado como base de un futuro CMS. **API REST en PHP 8.3 sin framework** (arquitectura en capas, autenticación por token, roles admin/user, login con Google y recuperación de contraseña), **MySQL** y **Docker**, con dos SPAs en **Vue 3 + Vite**: una zona pública y una zona privada.
 
-> **Estado:** el backend está completo. Los dos frontends tienen la interfaz completa y funcionan contra
-> datos simulados (*mocks*) que respetan el contrato de la API; conectarlos es el siguiente paso
-> ([próximos pasos](#próximos-pasos)).
+> **Estado:** el backend está completo. Los dos frontends tienen la interfaz completa y funcionan contra datos simulados (*mocks*) que respetan el contrato de la API; conectarlos es el siguiente paso (ver *Próximos pasos* al final).
 
 ---
 
 ## Funcionalidades
 
-**Zona pública** (sin login): registro, inicio de sesión, login con Google, recuperación de contraseña
-y contador de usuarios registrados.
+**Zona pública** (sin login): registro, inicio de sesión, login con Google, recuperación de contraseña y contador de usuarios registrados.
 
 **Zona privada** (con login), según el rol:
+
 - **Administrador:** dashboard, gestión de usuarios (crear, editar, eliminar) y métricas.
 - **Usuario:** perfil y cambio de contraseña.
 
@@ -44,11 +39,8 @@ flowchart LR
     S -->|verifica id_token| GOOGLE[[Google]]
 ```
 
-- **Backend en capas, sin framework:** `Router` propio con rutas dinámicas, `Controllers` (HTTP),
-  `Services` (reglas de negocio), `Repositories` (SQL con PDO y *prepared statements*) y un middleware
-  `AuthGuard` para autenticación y roles. Inyección de dependencias manual en `public/index.php`.
-- **Frontends desacoplados:** dos SPAs independientes con Vue Router y *composables*; la privada protege
-  sus rutas con guards de token y rol (solo experiencia de usuario: la seguridad real está en la API).
+- **Backend en capas, sin framework:** `Router` propio con rutas dinámicas, `Controllers` (HTTP), `Services` (reglas de negocio), `Repositories` (SQL con PDO y *prepared statements*) y un middleware `AuthGuard` para autenticación y roles. Inyección de dependencias manual en `public/index.php`.
+- **Frontends desacoplados:** dos SPAs independientes con Vue Router y *composables*; la privada protege sus rutas con guards de token y rol (solo experiencia de usuario: la seguridad real está en la API).
 
 ### Stack y por qué
 
@@ -74,8 +66,7 @@ docker compose up --build
 
 La API queda en `http://localhost:8080`. Comprobación: `curl http://localhost:8080/api/health` → `{"status":"ok",...}`
 
-> MySQL crea la base de datos y el usuario solo la primera vez, con los valores del `.env`.
-> Si cambias las credenciales después, recrea el volumen: `docker compose down -v`.
+> MySQL crea la base de datos y el usuario solo la primera vez, con los valores del `.env`. Si cambias las credenciales después, recrea el volumen: `docker compose down -v`.
 
 ### 2. Frontend público
 
@@ -94,8 +85,7 @@ npm install
 npm run dev                   # http://localhost:5174
 ```
 
-Mientras los frontends usan mocks, para entrar en la zona privada abre `http://localhost:5174/dev-login`
-y elige admin o usuario. Esa ruta solo existe con `VITE_APP_ENV=development`.
+Mientras los frontends usan mocks, para entrar en la zona privada abre `http://localhost:5174/dev-login` y elige admin o usuario. Esa ruta solo existe con `VITE_APP_ENV=development`.
 
 ### Credenciales de prueba (API)
 
@@ -174,13 +164,10 @@ erDiagram
 ## Seguridad
 
 - **Contraseñas** con bcrypt (`password_hash` / `password_verify`).
-- **Tokens de sesión opacos:** 32 bytes aleatorios; al cliente se envía el token y en la base de datos
-  solo se guarda su hash SHA-256. Caducan a los 7 días y se revocan al cambiar la contraseña o el rol.
+- **Tokens de sesión opacos:** 32 bytes aleatorios; al cliente se envía el token y en la base de datos solo se guarda su hash SHA-256. Caducan a los 7 días y se revocan al cambiar la contraseña o el rol.
 - **Roles verificados en el servidor** en cada petición (401 sin sesión válida, 403 sin permiso).
-- **Recuperación de contraseña:** token aleatorio hasheado, caducidad de 60 minutos, un solo uso y
-  respuesta idéntica exista o no el email (evita la enumeración de usuarios).
-- **Google:** se verifican audiencia, emisor, caducidad y email verificado del `id_token` antes de emitir
-  un token propio.
+- **Recuperación de contraseña:** token aleatorio hasheado, caducidad de 60 minutos, un solo uso y respuesta idéntica exista o no el email (evita la enumeración de usuarios).
+- **Google:** se verifican audiencia, emisor, caducidad y email verificado del `id_token` antes de emitir un token propio.
 - **SQL** siempre con consultas preparadas.
 - **Integridad:** no se puede eliminar ni degradar al último administrador.
 
@@ -190,13 +177,9 @@ erDiagram
 
 Las más relevantes (el registro completo, con su razonamiento, está en [docs/DECISIONES.md](docs/DECISIONES.md)):
 
-- **Tokens opacos en base de datos en lugar de JWT:** permiten revocar sesiones al instante, a cambio de
-  una consulta por petición, asumible en un monolito con una sola base de datos.
-- **Desarrollo *contract-first* con mocks:** se acordó el formato de la API y el frontend se construyó
-  contra respuestas simuladas para avanzar en paralelo con el backend.
-- **Migración incremental de JS vanilla a Vue 3:** en una rama propia, una vista por commit y sin romper
-  el funcionamiento en ningún paso; integrada mediante pull request. La versión vanilla se conserva en la
-  rama `vanilla`.
+- **Tokens opacos en base de datos en lugar de JWT:** permiten revocar sesiones al instante, a cambio de una consulta por petición, asumible en un monolito con una sola base de datos.
+- **Desarrollo *contract-first* con mocks:** se acordó el formato de la API y el frontend se construyó contra respuestas simuladas para avanzar en paralelo con el backend.
+- **Migración incremental de JS vanilla a Vue 3:** en una rama propia, una vista por commit y sin romper el funcionamiento en ningún paso; integrada mediante pull request. La versión vanilla se conserva en la rama `vanilla`.
 
 ---
 
@@ -239,6 +222,4 @@ piloto-cms/
 
 ## Desarrollo asistido por IA
 
-El proyecto se desarrolló con asistencia de IA (Cursor) como par de programación: la planificación, la
-arquitectura, la revisión del código y las decisiones son propias, y cada sesión quedó documentada en
-[docs/DIARIO.md](docs/DIARIO.md).
+El proyecto se desarrolló con asistencia de IA (Cursor) como par de programación: la planificación, la arquitectura, la revisión del código y las decisiones son propias, y cada sesión quedó documentada en [docs/DIARIO.md](docs/DIARIO.md).
